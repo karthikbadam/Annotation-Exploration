@@ -25,7 +25,7 @@ function BarChart(options) {
             return d["key"];
         },
         xValue = function (d) {
-            return d["value"] >= 1? d["value"]: 1;
+            return d["value"] >= 1 ? d["value"] : 1;
         };
 
     var x = d3.scaleLinear(), y = d3.scaleLinear();
@@ -34,16 +34,141 @@ function BarChart(options) {
 
     var myFormat = d3.format(',');
 
+    function addAnnotation(d, i, selection) {
+
+        if (!d3.event.altKey) {
+            return;
+        }
+
+        // add annotation textbox
+        $(".annotationObject").remove();
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "annotationObject")
+            .style("left", (d3.event.pageX - 20) + "px")
+            .style("top", (d3.event.pageY - 40) + "px")
+            .style("width", 200)
+            .style("height", 200)
+            .style("position", "absolute")
+            .style("z-index", 100);
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotation");
+
+        var inputDiv = inputWrapper.append("div")
+            .attr("class", "mdl-textfield mdl-js-textfield");
+
+        inputDiv.append("textarea")
+            .attr("class", "mdl-textfield__input")
+            .attr("id", parentId + "annotation")
+            .attr("type", "text")
+            .attr("width", 180)
+            .attr("rows", "3")
+            .on("change", function () {
+                //Handle entered data here
+                console.log(this.value);
+                if (this.value && this.value.length > 0) {
+                    d3.select("#" + parentId + "annotation-button").html("Add");
+                } else {
+                    d3.select("#" + parentId + "annotation-button").html("Close");
+                }
+            });
+
+        inputDiv.append("label")
+            .attr("class", "mdl-textfield__label")
+            .attr("for", parentId + "annotation");
+
+        componentHandler.upgradeElement(document.getElementById(parentId + "annotation"));
+
+        inputWrapper.append("button")
+            .attr("id", parentId + "annotation-button")
+            .attr("class", "mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect")
+            .html("Close")
+            .on('click', function () {
+
+                console.log("Final annotation: " + document.getElementById(parentId + "annotation").value);
+
+                if (document.getElementById(parentId + "annotation").value.length > 0) {
+                    //do something
+                }
+
+                $(".annotationObject").remove();
+
+                if (selection) {
+                    selection.attr("fill", function () {
+                        return this.tagName.toLowerCase() == "text" ? "#AAA" : THEME.fillColor;
+                    });
+                }
+            });
+
+        componentHandler.upgradeElement(document.getElementById(parentId + "annotation-button"));
+    }
+
+    function hover(d, i) {
+        var dataArray = aggregates.top(Infinity);
+        var filtered = [];
+        dataArray.forEach(function (datum) {
+            var key = d["key"];
+            if (datum[cols[0]] == key) {
+                filtered.push(datum);
+            }
+        });
+
+        $(".labelObject").remove();
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "labelObject")
+            .style("left", (d3.event.pageX - 20) + "px")
+            .style("top", (d3.event.pageY - 40) + "px")
+            .style("width", 400)
+            .style("height", 200)
+            .style("position", "absolute")
+            .style("z-index", 100)
+            .style("pointer-events", "none");
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotation");
+
+        inputWrapper.append("div")
+            .html(function () {
+                if (filtered.length > 0) {
+                    return filtered[0].purpose;
+                }
+                return "";
+            });
+    }
+
+    function hoverend(d, i) {
+
+        $(".labelObject").remove();
+
+    }
+
     function click(d, i) {
+
+        d3.event.stopPropagation();
+
         var filterKey = d["key"];
         var dimensionName = cols[0];
+
+        if (d3.event.altKey) {
+            var selection = d3.select(this).attr("fill", THEME.selection);
+            console.log(d);
+            addAnnotation(d, i, selection);
+            return;
+        }
 
         var query = queryManager.createQuery({
             index: dimensionName,
             value: filterKey,
             operator: "equal"
         });
-
 
         if (filters.indexOf(filterKey) >= 0) {
             var index = filters.indexOf(filterKey);
@@ -79,7 +204,7 @@ function BarChart(options) {
                 backgroundData = data;
             }
 
-            x = log? d3.scaleLog(): d3.scaleLinear();
+            x = log ? d3.scaleLog() : d3.scaleLinear();
 
             width = $("#" + parentId).width() - margin.left - margin.right;
             height = $("#" + parentId).height() - margin.top - margin.bottom;
@@ -115,7 +240,11 @@ function BarChart(options) {
             var svg = d3.select(this).selectAll("svg");
 
             // Otherwise, create the skeletal chart.
-            var gEnter = svg.data([data]).enter().append("svg").attr("id", parentId + "bar").append("g").attr("id", "container");
+            var gEnter = svg.data([data]).enter().append("svg")
+                .attr("id", parentId + "bar")
+                .on("click", addAnnotation)
+                .append("g")
+                .attr("id", "container");
 
             gEnter.append("g").attr("class", "x axis");
             gEnter.append("g").attr("class", "x baxis");
@@ -187,7 +316,9 @@ function BarChart(options) {
                         return "block";
                     }
                 })
-                .on("click", click);
+                .on('mouseover', hover)
+                .on("click", click)
+                .on('mouseout', hoverend);
 
             foregroundBarElements.select("g rect")
                 .attr("width", function (d) {
@@ -260,7 +391,9 @@ function BarChart(options) {
                     }
                     return d["key"];
                 })
-                .on("click", click);
+                .on('mouseover', hover)
+                .on("click", click)
+                .on('mouseout', hoverend);
 
             g.select(".x.axis")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
