@@ -9,8 +9,81 @@ function QueryManager(options) {
     _self.visualizations = options.visualizations;
 
     _self.queryKeeper = {};
-
 }
+
+
+QueryManager.prototype.retrieveCurrentQuery = function (filters1, filters2, cols) {
+
+    var _self = this;
+
+    var query = {};
+
+    query["$and"] = [];
+
+    var filters = filters1 ? filters1 : [];
+
+
+    if (filters.length > 0) {
+
+        var q = {};
+
+        if (filters[0].constructor != Array) {
+
+            q[cols[0]] = {"$in": filters};
+
+        } else if (filters[0].length == 2) {
+
+            q["$or"] = [];
+
+            for (var i = 0; i < filters.length; i++) {
+
+                var q1 = {};
+                var filter = filters[i];
+
+                q1[cols[0]] = {"$gte": filter[0], "$lte": filter[1]};
+
+                q["$or"].push(q1);
+            }
+        }
+
+        if (Object.keys(q).length > 0)
+            query["$and"].push(q);
+    }
+
+    var filters = filters2 ? filters2 : [];
+
+    if (filters.length > 0) {
+
+        var q = {};
+        q["$or"] = [];
+
+        if (!filters[0].length) {
+            for (var i = 0; i < filters.length; i++) {
+                var filter = filters[i];
+                var q1 = {};
+                q1[cols[0]] = filter[cols[0]];
+                q1[cols[1]] = filter[cols[1]];
+                q["$or"].push(q1);
+            }
+        } else {
+            for (var i = 0; i < filters.length; i++) {
+                var filter = filters[i];
+                var q1 = {};
+                q1[cols[0]] = {"$gte": filter[cols[0]][0], "$lte": filter[cols[0]][1]};
+                q1[cols[1]] = {"$gte": filter[cols[1]][0], "$lte": filter[cols[1]][1]};
+                q["$or"].push(q1);
+            }
+        }
+
+        if (Object.keys(q).length > 0)
+            query["$and"].push(q);
+    }
+
+    console.log(JSON.stringify(query));
+
+    return query;
+};
+
 
 QueryManager.prototype.retrieveData = function () {
 
@@ -83,6 +156,16 @@ QueryManager.prototype.retrieveData = function () {
         }
     });
 
+    return query;
+};
+
+
+QueryManager.prototype.retrieveData = function () {
+
+    var _self = this;
+
+    var query = _self.retrieveData();
+
     console.log(JSON.stringify(query));
 
     $.ajax({
@@ -93,10 +176,10 @@ QueryManager.prototype.retrieveData = function () {
         success: function (data) {
             console.log(data["content"]);
         },
-        dataType : 'json',
+        dataType: 'json'
     });
+};
 
-}
 
 QueryManager.prototype.setGlobalQuery = function (query, propagate) {
 
@@ -133,6 +216,7 @@ QueryManager.prototype.setGlobalQuery = function (query, propagate) {
     //d3.selectAll(".extent").attr("width", 0).attr("x", 0);
 
 };
+
 
 QueryManager.prototype.clearRecentQuery = function () {
     var _self = this;
