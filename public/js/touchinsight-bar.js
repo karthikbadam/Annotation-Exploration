@@ -34,6 +34,13 @@ function BarChart(options) {
 
     var myFormat = d3.format(',');
 
+    function showAnnotation(data) {
+
+
+
+
+    }
+
     function addAnnotation(d, i, selection) {
 
         if (!d3.event.altKey) {
@@ -107,7 +114,41 @@ function BarChart(options) {
         componentHandler.upgradeElement(document.getElementById(parentId + "annotation-button"));
     }
 
-    function hover(d, i) {
+    function hover2 (d, i) {
+
+        // Based on hierarchical clustering from the server
+
+        $(".labelObject").remove();
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "labelObject")
+            .style("left", (d3.event.pageX - 20) + "px")
+            .style("top", (d3.event.pageY - 40) + "px")
+            .style("width", 400)
+            .style("height", 200)
+            .style("position", "absolute")
+            .style("z-index", 100)
+            .style("pointer-events", "none");
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotation");
+
+        inputWrapper.append("div")
+            .html(function () {
+                // if (filtered.length > 0) {
+                //     return filtered[0].purpose;
+                // }
+                // return "";
+            });
+    }
+
+    function hover (d, i) {
+
+        // Based on traditional binning algorithms
+
         var dataArray = aggregates.top(Infinity);
         var filtered = [];
         dataArray.forEach(function (datum) {
@@ -142,6 +183,7 @@ function BarChart(options) {
                 }
                 return "";
             });
+
     }
 
     function hoverend(d, i) {
@@ -173,8 +215,11 @@ function BarChart(options) {
         if (filters.indexOf(filterKey) >= 0) {
             var index = filters.indexOf(filterKey);
             filters.splice(index, 1);
+            $(".labelObject").remove();
+
         } else {
             filters.push(filterKey);
+            hover(d, i);
         }
 
         if (filters.length == 0) {
@@ -200,6 +245,22 @@ function BarChart(options) {
                 data.push(datum);
             });
 
+            var unique = data.filter(function (d) {
+                return d.value > 0;
+            })
+
+            var numClusters = unique.length;
+
+            // TODO: Ask server for annotation data
+            var metaAnnotation = {
+                cols: cols,
+                clusters: numClusters,
+                filters: unique
+            };
+
+            //QueryManager.requestAnnotations(metaAnnotation);
+
+
             if (!backgroundData) {
                 backgroundData = data;
             }
@@ -209,7 +270,7 @@ function BarChart(options) {
             width = $("#" + parentId).width() - margin.left - margin.right;
             height = $("#" + parentId).height() - margin.top - margin.bottom;
 
-            var actualheight = ((barH + 1) * data.length < height ? height : (barH + 1) * data.length) - margin.top - margin.bottom;
+            var actualheight = ((barH) * data.length < height ? height : (barH) * data.length) + 50 - margin.top - margin.bottom;
 
             // Update the x-scale.
             // Note: the domain for x is based on the current data
@@ -391,9 +452,9 @@ function BarChart(options) {
                     }
                     return d["key"];
                 })
-                .on('mouseover', hover)
+                //.on('mouseover', hover)
                 .on("click", click)
-                .on('mouseout', hoverend);
+                //.on('mouseout', hoverend);
 
             g.select(".x.axis")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")

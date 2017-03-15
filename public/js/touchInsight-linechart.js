@@ -75,6 +75,11 @@ function LineChart(options) {
             operator: "equal"
         });
 
+        // reset filter every time
+        // TODO: remove this to support "OR" queries on time dimensions
+        aggregates.filterAll();
+        filters = [];
+
         // Check for switching query on and off
         var index = 0;
         for (index = 0; index < filters.length; index++) {

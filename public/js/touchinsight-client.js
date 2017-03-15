@@ -3,9 +3,11 @@
 var fieldMargins = {};
 fieldMargins["date"] = 70;
 fieldMargins["description"] = 220;
+fieldMargins["subtype"] = 220;
 fieldMargins["state"] = 50;
 fieldMargins["city"] = 80;
 fieldMargins["address"] = 100;
+fieldMargins["const_cost"] = 100;
 fieldMargins["purpose"] = 120;
 fieldMargins["zip"] = 50;
 fieldMargins["latitude"] = 50;
@@ -19,14 +21,15 @@ var EMPTY_DATUM = "None";
 var visuals = [
     ['date'],
     ["latitude", "longitude"],
-    ["zip"],
     ["description"],
+    ["subtype"],
     ["city"],
+    ["const_cost"],
     ["description", "address"]
 ];
 
 var rows = 4, cols = 4;
-var layout = [[2, 1], [2, 3], [1, 2], [1, 2], [1, 1], [3, 1]];
+var layout = [[2, 1], [2, 3], [1, 2], [1, 2], [1, 1], [1, 1], [2, 1]];
 var numViews = layout.length;
 
 var visualizations = new Array(layout.length);

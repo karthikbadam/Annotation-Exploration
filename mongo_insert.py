@@ -29,7 +29,9 @@ mongo_collection.drop()  # throw out what's there
 for data in data_json:
     wData = {}
     wData["date"] = datetime.strptime(data["date_issued"], '%Y-%m-%dT%H:%M:%S')
-    wData["description"] = data["permit_subtype_description"]
+    wData["description"] = data["permit_type_description"]
+    wData["subtype"] = data["permit_subtype_description"]
+
     wData["zip"] = data["zip"]
 
     if "purpose" in data.keys():
@@ -38,6 +40,11 @@ for data in data_json:
         wData["purpose"] = ""
 
     wData["contact"] = data["contact"]
+
+    if "const_cost" in data.keys():
+        wData["const_cost"] = data["const_cost"]
+    else:
+        wData["const_cost"] = ""
 
     if "state" in data.keys():
         wData["state"] = data["state"]

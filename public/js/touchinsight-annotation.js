@@ -38,6 +38,7 @@ AnnotationManager.prototype.addAnnotation = function (annotation) {
     }
 };
 
+
 AnnotationManager.prototype.getAnnotations = function (annotation) {
 
     var _self = this;
@@ -53,6 +54,7 @@ AnnotationManager.prototype.getAnnotations = function (annotation) {
 
     return allAnnotations;
 };
+
 
 AnnotationManager.prototype.sendtoServer = function () {
 
