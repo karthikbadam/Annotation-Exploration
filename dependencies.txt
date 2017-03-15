@@ -5,3 +5,6 @@ pip install pymongo==3.4.0
 pip install shapely==1.5.17.post1
 pip install flask==0.12
 pip install titlecase==0.8.2
+pip install scikit-learn==0.18.1 sklearn==0.0
+pip install scipy==0.18.1
+pip install matplotlib==2.0.0
