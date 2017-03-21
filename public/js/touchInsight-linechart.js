@@ -9,9 +9,11 @@ function LineChart(options) {
     var margin = {
         top: 10,
         right: 30,
-        bottom: 20,
+        bottom: 40,
         left: 50
     };
+
+    var curve;
 
     var cols, parentId, aggregates, groupbyDim, width, height, x, y, xAxis, yAxis, byAxis, backgroundData = null;
 
@@ -19,49 +21,107 @@ function LineChart(options) {
 
     var filters2D = [];
 
-    var timeScale, timeFormat, ticks;
+    var roundValue = 10, ticks, log = false;
 
     var label, log = false;
 
+    var roundScale = function (n, index) {
+        index = index ? index : 10;
+        return Math.round(n * 1.0 / index) * index;
+    };
+
     var xValue = function (d) {
-            return new Date(d["key"]);
+            return d["key"];
         },
         yValue = function (d) {
             return d["value"];
         };
 
-    x = d3.scaleTime(), y = d3.scaleLinear();
+    x = d3.scaleLinear(), y = d3.scaleLinear();
+
+    var formatSuffix = d3.format(".2s");
 
     // var line = d3.svg.line().x(xValue).y(yValue);
+
+    var measure = null;
+
+    var focus = null;
 
     var area = d3.area()
         .x(function (d) {
             return x(xValue(d));
         })
-        .curve(d3.curveMonotoneX)
+        .curve(curve ? curve : d3.curveStepAfter)
         .y1(function (d) {
             // return 0 if date is within a filter
             // Check for switching query on and off
             for (var index = 0; index < filters.length; index++) {
                 var filter = filters[index];
                 if (d["key"] >= filter[0] && d["key"] <= filter[1]) {
-                    return y(yValue(d));
+                    return isFinite(y(yValue(d))) ? y(yValue(d)) : height;
                 }
             }
-            return filters.length == 0 ? y(yValue(d)) : height;
+            return filters.length == 0 ? (isFinite(y(yValue(d))) ? y(yValue(d)) : height) : height;
         });
+
+    function addAnnotationIcons(data) {
+
+        $(".labelObject").remove();
+
+        // {key, value, array[{index, score}], annotations[{annotation, [min, max score], pointsIndices};
+        console.log(data);
+
+        // Foreground view showing the current data
+        var annElements = d3.select("#" + parentId).select("#container").selectAll(".annotation-dot")
+            .data(data, function (d) {
+                return d["key"];
+            });
+
+        annElements.enter().append("circle")
+            .attr("class", "annotation-dot")
+            .attr("r", 5)
+            .attr("cx", function (d) {
+                return x(xValue(d));
+            })
+            .attr("cy", function (d) {
+                return y(d["indices"].length);
+            })
+            .style("fill", THEME.selection)
+            .style("fill-opacity", 0.7)
+            .style("stroke", THEME.fillColor)
+            .style("stroke-width", "1px")
+            .on("click", showAnnotation);
+
+        annElements
+            .attr("cx", function (d) {
+                return x(xValue(d));
+            })
+            .attr("cy", function (d) {
+                return y(d["indices"].length);
+            })
+            .on("click", showAnnotation);
+
+        annElements.exit().remove();
+    }
+
 
     function brushend() {
         if (!d3.event.sourceEvent) return; // Only transition after input.
-        if (!d3.event.selection) return; // Ignore empty selections.
+        if (!d3.event.selection) {
+            //delete filters and then return
+            aggregates.filterAll();
+            filters = [];
+            queryManager.setGlobalQuery({}, true);
+            return;
+        }  // Ignore empty selections.
 
         var d0 = d3.event.selection.map(x.invert),
-            d1 = d0.map(timeScale.round);
+            d1 = d0.map(roundScale);
 
         // If empty when rounded, use floor & ceil instead.
         if (d1[0] >= d1[1]) {
-            d1[0] = timeScale.floor(d0[0]);
-            d1[1] = timeScale.offset(d1[0]);
+            d1[0] = roundScale(d0[0]);
+            d1[1] = roundScale(d0[0]) + roundValue;
         }
 
         d3.select(this).transition().call(d3.event.target.move, d1.map(x));
@@ -75,8 +135,8 @@ function LineChart(options) {
             operator: "equal"
         });
 
-        // reset filter every time
-        // TODO: remove this to support "OR" queries on time dimensions
+        // reset filter
+        // TODO: remove this to support "OR" queries
         aggregates.filterAll();
         filters = [];
 
@@ -84,7 +144,7 @@ function LineChart(options) {
         var index = 0;
         for (index = 0; index < filters.length; index++) {
             var filter = filters[index];
-            if (extent[0].getTime() == filter[0].getTime() && extent[1].getTime() == filter[1].getTime()) {
+            if (extent[0] == filter[0] && extent[1] == filter[1]) {
                 filters.splice(index, 1);
                 index = -1;
                 break;
@@ -106,7 +166,139 @@ function LineChart(options) {
             });
         }
         queryManager.setGlobalQuery(query, true);
-        queryManager.retrieveData();
+
+    }
+
+     function redrawAnnotations(newFocus, newMeasure) {
+
+        // change metrics
+        focus = newFocus ? newFocus : focus;
+        measure = newMeasure ? newMeasure : measure;
+
+        // query server
+        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+    }
+
+    function showAnnotation(d, i) {
+
+        // Based on traditional binning algorithms
+        $(".labelObject").remove();
+        d3.event.stopPropagation();
+
+        var annotations = d["annotations"];
+
+        annotations = annotations.sort(function (a, b) {
+            var metric1 = a["range"][1] - a["range"][0];
+            var metric2 = b["range"][1] - b["range"][0];
+
+            return a["scores"].length < b["scores"].length;
+
+            if (metric1 < metric2) {
+                return 1;
+            } else if (metric1 == metric2) {
+                return a["range"][1] < b["range"][1];
+            } else {
+                return -1;
+            }
+        });
+
+        var widget_width = 400;
+        var widget_height = 400;
+        var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
+        var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "labelObject")
+            .style("left", (left - 20) + "px")
+            .style("top", (top - 40) + "px")
+            .style("width", widget_width)
+            .style("height", widget_height)
+            .style("position", "absolute")
+            .style("z-index", 100)
+            .style("overflow", "scroll");
+
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotations");
+
+        var header = annotationBinner.buildHeader(inputWrapper, widget_width - 30, 20,
+            focus,
+            measure,
+            redrawAnnotations);
+
+        annotations.forEach(function (a) {
+            var aWrapper = inputWrapper.append("div")
+                .style("width", widget_width - 30)
+                .style("height", widget_height / 4)
+                .style("margin-bottom", "5px")
+                .style("border", "1px solid black")
+                .style("display", "block");
+
+            var aWrapperLeft = aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", widget_height / 4)
+                .style("float", "left");
+
+            aWrapperLeft.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", widget_height / 4 * (a["range"][1] - a["range"][0]) + 1)
+                .style("top", widget_height / 4 * (1 - a["range"][1]))
+                .style("background-color", "rgba(0, 0, 0, 0.3)")
+                .style("position", "relative")
+
+            aWrapperLeft.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", 12)
+                .style("text-align", "right")
+                .style("top", widget_height / 4 * (1 - a["range"][1]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+                .style("font-size", "10px")
+                .style("color", "#222")
+                .style("position", "relative")
+                .html(function () {
+                    return a["range"][1].toFixed(2);
+                });
+
+            if (a["range"][1] != a["range"][0]) {
+                aWrapperLeft.append("div")
+                    .style("width", (widget_width - 30) * 0.10 - 10)
+                    .style("height", 12)
+                    .style("top", widget_height / 4 * (1 - a["range"][0]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+                    .style("text-align", "right")
+                    .style("font-size", "10px")
+                    .style("color", "#222")
+                    .style("position", "relative")
+                    .style("display", "inline-block")
+                    .html(function () {
+                        return a["range"][0].toFixed(2);
+                    });
+
+            }
+
+            aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.90)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return a["scores"].length + " points";
+                });
+
+            aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.90)
+                .style("height", widget_height / 4 - 20)
+                .style("display", "inline-block")
+                .style("padding-left", "3px")
+                .style("float", "right")
+                .style("font-size", "14px")
+                .html(function () {
+                    return a["annotation"];
+                });
+        })
     }
 
     var brush = d3.brushX()
@@ -119,14 +311,14 @@ function LineChart(options) {
             // crossfilter group
             processedTemp = groupbyDim.reduce(
                 function (p, v) {
-                    var time = timeScale.floor(v[cols[0]]);
-                    p.map.set(time, p.map.has(time) ? p.map.get(time) + 1 : 1);
+                    var value = roundScale(v[cols[0]]);
+                    p.map.set(value, p.map.has(value) ? p.map.get(value) + 1 : 1);
                     p.count++;
                     return p;
                 },
                 function (p, v) {
-                    var time = timeScale.floor(v[cols[0]]);
-                    p.map.set(time, p.map.has(time) ? p.map.get(time) - 1 : 0);
+                    var value = roundScale(v[cols[0]]);
+                    p.map.set(value, p.map.has(value) ? p.map.get(value) - 1 : 0);
                     p.count--;
                     return p;
 
@@ -136,7 +328,6 @@ function LineChart(options) {
                 }
             ).all();
 
-
             var data = [];
             processedTemp.forEach(function (d) {
                 data.push({
@@ -145,21 +336,29 @@ function LineChart(options) {
                 });
             });
 
+
             if (!backgroundData) {
                 backgroundData = data;
+                y = log ? d3.scaleLog() : d3.scaleLinear();
 
                 // Update the x-scale.
                 x.domain(d3.extent(backgroundData, function (d) {
                     return xValue(d);
                 }));
-
-
             }
 
             // Update the y-scale.
-            y.domain([0, d3.max(data, function (d) {
+            var domainY = log ? d3.extent(data, function (d) {
                 return yValue(d);
-            })]);
+            }) : [0, d3.max(data, function (d) {
+                return yValue(d);
+            })];
+
+            if (log && domainY[0] == 0) {
+                domainY[0] = 1
+            }
+
+            y.domain(domainY);
 
             width = $("#" + parentId).width() - margin.left - margin.right;
             height = $("#" + parentId).height() - margin.top - margin.bottom;
@@ -169,7 +368,7 @@ function LineChart(options) {
 
             xAxis = d3.axisBottom(x)
                 .tickFormat(function (d) {
-                    return timeFormat(new Date(d));
+                    return formatSuffix(d);
                 })
                 .tickSizeInner(-height)
                 .tickSizeOuter(0)
@@ -181,15 +380,15 @@ function LineChart(options) {
                 .tickFormat(d3.format(".0f"))
                 .tickSizeInner(-width)
                 .tickSizeOuter(0)
-                .tickFormat(d3.format(".2s"))
+                .tickFormat(d3.format(".1s"))
                 .tickPadding(10)
-                .ticks(Math.round(height / 20));
+                .ticks(Math.round(height / 40));
 
             brush.extent([[0, 0], [width, height]]);
 
             data = data.sort(function (a, b) {
-                if (xValue(b).getTime() <
-                    xValue(a).getTime()) return 1;
+                if (xValue(b) <
+                    xValue(a)) return 1;
                 return -1;
             });
 
@@ -237,7 +436,7 @@ function LineChart(options) {
 
             foreground.enter()
                 .append("path")
-                .attr("id", "time")
+                .attr("id", "line")
                 .attr("class", "foreground")
                 .attr("d", area.y0(y.range()[0]))
                 .attr("fill", THEME.fillColor)
@@ -252,46 +451,46 @@ function LineChart(options) {
             foreground.exit().remove();
 
             // Update foreground
-            var foregroundDots = g.selectAll(".foregrounddot")
-                .data(data, function (d) {
-                    return JSON.stringify(d["key"]);
-                });
-
-            foregroundDots.enter()
-                .append("circle")
-                .attr("class", "foregrounddot")
-                .attr("r", 2)
-                .attr("cx", function (d) {
-                    return x(xValue(d));
-                })
-                .attr("cy", function (d) {
-                    for (var index = 0; index < filters.length; index++) {
-                        var filter = filters[index];
-                        if (d["key"] >= filter[0] && d["key"] <= filter[1]) {
-                            return y(yValue(d));
-                        }
-                    }
-                    return filters.length == 0? y(yValue(d)): height;
-                })
-                .style("fill", "transparent")
-                .style("stroke", THEME.fillColor)
-                .style("stroke-width", "1px");
-
-            foregroundDots
-                .attr("cx", function (d) {
-                    return x(xValue(d));
-                })
-                .attr("cy", function (d) {
-                    for (var index = 0; index < filters.length; index++) {
-                        var filter = filters[index];
-                        if (d["key"] >= filter[0] && d["key"] <= filter[1]) {
-                            return y(yValue(d));
-                        }
-                    }
-                    return filters.length == 0? y(yValue(d)): height;
-                });
-
-            foregroundDots.exit().remove();
+            // var foregroundDots = g.selectAll(".foregrounddot")
+            //     .data(data, function (d) {
+            //         return JSON.stringify(d["key"]);
+            //     });
+            //
+            // foregroundDots.enter()
+            //     .append("circle")
+            //     .attr("class", "foregrounddot")
+            //     .attr("r", 2)
+            //     .attr("cx", function (d) {
+            //         return x(xValue(d));
+            //     })
+            //     .attr("cy", function (d) {
+            //         for (var index = 0; index < filters.length; index++) {
+            //             var filter = filters[index];
+            //             if (d["key"] >= filter[0] && d["key"] <= filter[1]) {
+            //                 return isFinite(y(yValue(d))) ? y(yValue(d)) : height;
+            //             }
+            //         }
+            //         return filters.length == 0 ? (isFinite(y(yValue(d))) ? y(yValue(d)) : height) : height;
+            //     })
+            //     .style("fill", "transparent")
+            //     .style("stroke", THEME.fillColor)
+            //     .style("stroke-width", "1px");
+            //
+            // foregroundDots
+            //     .attr("cx", function (d) {
+            //         return x(xValue(d));
+            //     })
+            //     .attr("cy", function (d) {
+            //         for (var index = 0; index < filters.length; index++) {
+            //             var filter = filters[index];
+            //             if (d["key"] >= filter[0] && d["key"] <= filter[1]) {
+            //                 return isFinite(y(yValue(d))) ? y(yValue(d)) : height;
+            //             }
+            //         }
+            //         return filters.length == 0 ? (isFinite(y(yValue(d))) ? y(yValue(d)) : height) : height;
+            //     });
+            //
+            // foregroundDots.exit().remove();
 
             // Update the x-axis.
             g.select(".x.axis")
@@ -304,8 +503,8 @@ function LineChart(options) {
 
             if (!byAxis) {
                 byAxis = d3.axisRight(y)
-                    .tickFormat(d3.format(".2s"))
-                    .ticks(6);
+                    .tickFormat(d3.format(".1s"))
+                    .ticks(3);
 
                 // Update the y-axis.
                 g.select(".y.baxis")
@@ -326,19 +525,27 @@ function LineChart(options) {
                 .attr("fill", "#222")
                 .attr("font-size", "14px")
                 .style("text-anchor", "middle")
-                .text(label);
+                .text(log ? label + " (Log)" : label);
 
             gEnter.append("text")
                 .attr("transform",
                     "translate(" + (width / 2) + " ," +
-                    (height) + ")")
+                    (height + margin.top + margin.bottom - 15) + ")")
                 .attr("font-size", "14px")
                 .style("text-anchor", "middle")
                 .style("pointer-events", "none")
                 .text(cols[0]);
 
+
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
     }
+
+    chart.log = function (_) {
+        if (!arguments.length) return log;
+        log = _;
+        return chart;
+    };
 
     chart.render = function () {
         d3.select("#" + parentId).call(this);
@@ -369,15 +576,13 @@ function LineChart(options) {
         return chart;
     };
 
-    chart.timeScale = function (_) {
-        if (!arguments.length) return timeScale;
-        timeScale = _;
-        return chart;
-    };
-
-    chart.timeFormat = function (_) {
-        if (!arguments.length) return timeFormat;
-        timeFormat = _;
+    chart.roundScale = function (_) {
+        if (!arguments.length) return roundScale;
+        roundValue = _;
+        roundScale = function (n, _) {
+            var index = _ ? _ : 10;
+            return Math.round(n * 1.0 / index) * index;
+        };
         return chart;
     };
 

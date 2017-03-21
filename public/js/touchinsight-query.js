@@ -22,7 +22,6 @@ QueryManager.prototype.retrieveCurrentQuery = function (filters1, filters2, cols
 
     var filters = filters1 ? filters1 : [];
 
-
     if (filters.length > 0) {
 
         var q = {};
@@ -81,7 +80,7 @@ QueryManager.prototype.retrieveCurrentQuery = function (filters1, filters2, cols
 
     console.log(JSON.stringify(query));
 
-    return query;
+    return query["$and"].length > 0? query: {};
 };
 
 
@@ -164,7 +163,7 @@ QueryManager.prototype.retrieveData = function () {
 
     var _self = this;
 
-    var query = _self.retrieveData();
+    var query = _self.retrieveCurrentQuery();
 
     console.log(JSON.stringify(query));
 
@@ -185,27 +184,28 @@ QueryManager.prototype.setGlobalQuery = function (query, propagate) {
 
     var _self = this;
 
-    var currQuery = query;
-
-    var prevQuery = _self.queryStack[_self.queryStack.length - 1];
-
-    _self.queryStack.push(query);
-
-    // Some clean up of unwanted queries (identified by using when "clean" is triggered)
-    for (var i = _self.queryStack.length - 1; i >= 0; i--) {
-
-        var q = _self.queryStack[i];
-
-        if (q.logic == "CLEAN") {
-
-            _self.queryStack = _self.queryStack.slice(i);
-            break;
-        }
-    }
-
-    _self.historyQueryStack.push(query);
+    // var currQuery = query;
+    //
+    // var prevQuery = _self.queryStack[_self.queryStack.length - 1];
+    //
+    // _self.queryStack.push(query);
+    //
+    // // Some clean up of unwanted queries (identified by using when "clean" is triggered)
+    // for (var i = _self.queryStack.length - 1; i >= 0; i--) {
+    //
+    //     var q = _self.queryStack[i];
+    //
+    //     if (q.logic == "CLEAN") {
+    //
+    //         _self.queryStack = _self.queryStack.slice(i);
+    //         break;
+    //     }
+    // }
+    //
+    // _self.historyQueryStack.push(query);
 
     // update all other visualizations
+    annotationBinner.extract();
     if (propagate) {
         // call render on all visualizations
         for (i in _self.visualizations) {

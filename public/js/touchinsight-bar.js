@@ -13,7 +13,7 @@ function BarChart(options) {
     var filters2D = [];
 
     var margin = {
-        top: 25,
+        top: 35,
         right: 10,
         bottom: 20,
         left: 10
@@ -28,20 +28,59 @@ function BarChart(options) {
             return d["value"] >= 1 ? d["value"] : 1;
         };
 
-    var x = d3.scaleLinear(), y = d3.scaleLinear();
+    var x = d3.scaleLinear(), y = d3.scaleBand();
 
     var barH = 25;
 
     var myFormat = d3.format(',');
 
-    function showAnnotation(data) {
+    var measure = null;
 
+    var focus = null;
 
+    function addAnnotationIcons(data) {
 
+        $(".labelObject").remove();
 
+        // {key, value, array[{index, score}], annotations[{annotation, [min, max score], pointsIndices};
+        console.log(data);
+
+        // Foreground view showing the current data
+        var annElements = d3.select("#" + parentId).select("#container").selectAll(".annotation-dot")
+            .data(data, function (d) {
+                return d["key"];
+            });
+
+        annElements.enter().append("circle")
+            .attr("class", "annotation-dot")
+            .attr("r", 5)
+            .attr("cx", function (d) {
+                return margin.left + x(d["indices"].length);
+            })
+            .attr("cy", function (d) {
+                return margin.top + y.range()[0] - (y(yValue(d)) + barH / 2);
+            })
+            .style("fill", THEME.selection)
+            .style("fill-opacity", 0.7)
+            .style("stroke", THEME.fillColor)
+            .style("stroke-width", "1px")
+            .on("click", showAnnotation);
+
+        annElements
+            .attr("cx", function (d) {
+                return margin.left + x(d["indices"].length);
+            })
+            .attr("cy", function (d) {
+                return margin.top + y.range()[0] - (y(yValue(d)) + barH / 2);
+            })
+            .on("click", showAnnotation);
+
+        annElements.exit().remove();
     }
 
     function addAnnotation(d, i, selection) {
+
+        $(".labelObject").remove();
 
         if (!d3.event.altKey) {
             return;
@@ -114,7 +153,7 @@ function BarChart(options) {
         componentHandler.upgradeElement(document.getElementById(parentId + "annotation-button"));
     }
 
-    function hover2 (d, i) {
+    function hover2(d, i) {
 
         // Based on hierarchical clustering from the server
 
@@ -145,45 +184,135 @@ function BarChart(options) {
             });
     }
 
-    function hover (d, i) {
+    function redrawAnnotations(newFocus, newMeasure) {
+
+        // change metrics
+        focus = newFocus ? newFocus : focus;
+        measure = newMeasure ? newMeasure : measure;
+
+        // query server
+        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+    }
+
+    function showAnnotation(d, i) {
 
         // Based on traditional binning algorithms
+        $(".labelObject").remove();
+        d3.event.stopPropagation();
 
-        var dataArray = aggregates.top(Infinity);
-        var filtered = [];
-        dataArray.forEach(function (datum) {
-            var key = d["key"];
-            if (datum[cols[0]] == key) {
-                filtered.push(datum);
+        var annotations = d["annotations"];
+
+        annotations = annotations.sort(function (a, b) {
+            var metric1 = a["range"][1] - a["range"][0];
+            var metric2 = b["range"][1] - b["range"][0];
+
+           return a["scores"].length < b["scores"].length;
+
+            if (metric1 < metric2) {
+                return 1;
+            } else if (metric1 == metric2) {
+                return a["range"][1] < b["range"][1];
+            } else {
+                return -1;
             }
         });
 
-        $(".labelObject").remove();
+        var widget_width = 400;
+        var widget_height = 400;
+        var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
+        var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
         var inputWrapper = d3.select("body").append("div")
             .attr("class", "labelObject")
-            .style("left", (d3.event.pageX - 20) + "px")
-            .style("top", (d3.event.pageY - 40) + "px")
-            .style("width", 400)
-            .style("height", 200)
+            .style("left", (left - 20) + "px")
+            .style("top", (top - 40) + "px")
+            .style("width", widget_width)
+            .style("height", widget_height)
             .style("position", "absolute")
             .style("z-index", 100)
-            .style("pointer-events", "none");
+            .style("overflow", "scroll");
+
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
         inputWrapper.append("legend")
-            .html("Annotation");
+            .html("Annotations");
 
-        inputWrapper.append("div")
-            .html(function () {
-                if (filtered.length > 0) {
-                    return filtered[0].purpose;
-                }
-                return "";
-            });
+        var header = annotationBinner.buildHeader(inputWrapper, widget_width - 30, 20,
+            focus,
+            measure,
+            redrawAnnotations);
 
+        annotations.forEach(function (a) {
+            var aWrapper = inputWrapper.append("div")
+                .style("width", widget_width - 30)
+                .style("height", widget_height / 4)
+                .style("margin-bottom", "5px")
+                .style("border", "1px solid black")
+                .style("display", "block");
+
+            var aWrapperLeft = aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", widget_height / 4)
+                .style("float", "left");
+
+            aWrapperLeft.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", widget_height / 4 * (a["range"][1] - a["range"][0]) + 1)
+                .style("top", widget_height / 4 * (1 - a["range"][1]))
+                .style("background-color", "rgba(0, 0, 0, 0.3)")
+                .style("position", "relative");
+
+            aWrapperLeft.append("div")
+                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("height", 12)
+                .style("text-align", "right")
+                .style("top", widget_height / 4 * (1 - a["range"][1]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+                .style("font-size", "10px")
+                .style("color", "#222")
+                .style("position", "relative")
+                .html(function () {
+                    return a["range"][1].toFixed(2);
+                });
+
+            if (a["range"][1] != a["range"][0]) {
+                aWrapperLeft.append("div")
+                    .style("width", (widget_width - 30) * 0.10 - 10)
+                    .style("height", 12)
+                    .style("top", widget_height / 4 * (1 - a["range"][0]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+                    .style("text-align", "right")
+                    .style("font-size", "10px")
+                    .style("color", "#222")
+                    .style("position", "relative")
+                    .style("display", "inline-block")
+                    .html(function () {
+                        return a["range"][0].toFixed(2);
+                    });
+            }
+
+            aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.90)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return a["scores"].length + " points";
+                });
+
+            aWrapper.append("div")
+                .style("width", (widget_width - 30) * 0.90)
+                .style("height", widget_height / 4 - 20)
+                .style("display", "inline-block")
+                .style("padding-left", "3px")
+                .style("float", "right")
+                .style("font-size", "14px")
+                .html(function () {
+                    return a["annotation"];
+                });
+        })
     }
 
     function hoverend(d, i) {
@@ -199,12 +328,12 @@ function BarChart(options) {
         var filterKey = d["key"];
         var dimensionName = cols[0];
 
-        if (d3.event.altKey) {
-            var selection = d3.select(this).attr("fill", THEME.selection);
-            console.log(d);
-            addAnnotation(d, i, selection);
-            return;
-        }
+        // if (d3.event.altKey) {
+        //     var selection = d3.select(this).attr("fill", THEME.selection);
+        //     console.log(d);
+        //     addAnnotation(d, i, selection);
+        //     return;
+        // }
 
         var query = queryManager.createQuery({
             index: dimensionName,
@@ -219,7 +348,6 @@ function BarChart(options) {
 
         } else {
             filters.push(filterKey);
-            hover(d, i);
         }
 
         if (filters.length == 0) {
@@ -231,8 +359,8 @@ function BarChart(options) {
         }
 
         queryManager.setGlobalQuery(query, true);
-    }
 
+    }
 
     function chart(selection) {
         selection.each(function () {
@@ -254,9 +382,20 @@ function BarChart(options) {
             // TODO: Ask server for annotation data
             var metaAnnotation = {
                 cols: cols,
-                clusters: numClusters,
+                clusters: 10,
                 filters: unique
             };
+
+            // $.ajax({
+            //     type: "POST",
+            //     contentType: 'application/json',
+            //     url: "http://localhost:3000/annotation",
+            //     data: JSON.stringify(metaAnnotation),
+            //     success: function (data) {
+            //         console.log(data);
+            //     },
+            //     dataType: 'json'
+            // });
 
             //QueryManager.requestAnnotations(metaAnnotation);
 
@@ -280,17 +419,17 @@ function BarChart(options) {
 
             // Update the y-scale
             // Note: the domain for y is based on the entire data
-            y.domain(d3.extent(backgroundData, function (d) {
+            y.domain(backgroundData.map(function (d) {
                 return yValue(d);
             }));
 
             x.range([0, width]);
-            y.range([height, 0]);
+            y.range([actualheight, 0]);
 
             xAxis = d3.axisTop(x)
-                .tickSizeInner(-height)
+                .tickSizeInner(-actualheight)
                 .tickSizeOuter(0)
-                .tickFormat(d3.format(".1s"))
+                .tickFormat(d3.format(".2s"))
                 .tickPadding(10)
                 .ticks(ticks);
 
@@ -362,7 +501,7 @@ function BarChart(options) {
 
             foregroundBars.append("rect")
                 .attr("width", function (d) {
-                    return x(d["value"]) + 1;
+                    return x(d["value"]) >= 0 ? x(d["value"]) : 0;
                 })
                 .attr("height", barH - 5)
                 .attr("fill", THEME.fillColor)
@@ -377,13 +516,11 @@ function BarChart(options) {
                         return "block";
                     }
                 })
-                .on('mouseover', hover)
-                .on("click", click)
-                .on('mouseout', hoverend);
+                .on("click", click);
 
             foregroundBarElements.select("g rect")
                 .attr("width", function (d) {
-                    return x(d["value"]) + 1;
+                    return x(d["value"]) >= 0 ? x(d["value"]) : 0;
                 })
                 .attr("height", barH - 5)
                 .style("display", function (d) {
@@ -452,9 +589,7 @@ function BarChart(options) {
                     }
                     return d["key"];
                 })
-                //.on('mouseover', hover)
                 .on("click", click)
-                //.on('mouseout', hoverend);
 
             g.select(".x.axis")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
@@ -472,22 +607,23 @@ function BarChart(options) {
 
             // axis labels
             // text label for the y axis
-            // svg.append("text")
-            //     .attr("transform", "rotate(-90)")
-            //     .attr("y", 0 - margin.left)
-            //     .attr("x", 0 - (height / 2))
-            //     .attr("dy", "1em")
-            //     .style("text-anchor", "middle")
-            //     .text("Value");
+            gEnter.append("text")
+                .attr("x", width + margin.right + margin.left)
+                .attr("y", 14)
+                .attr("fill", "#222")
+                .attr("font-size", "14px")
+                .style("text-anchor", "end")
+                .text(log ? label + " (Log)" : label);
 
             gEnter.append("text")
-                .attr("x", margin.left - 20)
+                .attr("x", 0)
                 .attr("y", margin.top - 10)
                 .attr("fill", "#222")
-                .attr("text-anchor", "end")
+                .attr("text-anchor", "start")
                 .attr("font-size", "14px")
-                .text(label + " " + cols[0]);
+                .text(cols[0]);
 
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
     }
 

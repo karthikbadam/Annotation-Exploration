@@ -1,17 +1,15 @@
-
 // Custom margin size in the chart based on the attribute in the dataset
 var fieldMargins = {};
-fieldMargins["date"] = 70;
-fieldMargins["description"] = 220;
-fieldMargins["subtype"] = 220;
-fieldMargins["state"] = 50;
-fieldMargins["city"] = 80;
-fieldMargins["address"] = 100;
-fieldMargins["const_cost"] = 100;
-fieldMargins["purpose"] = 120;
-fieldMargins["zip"] = 50;
-fieldMargins["latitude"] = 50;
-fieldMargins["longitude"] = 50;
+fieldMargins["origin_state"] = 30;
+fieldMargins["origin"] = 100;
+fieldMargins["destination"] = 100;
+fieldMargins["destination_state"] = 30;
+
+fieldMargins["distance"] = 50;
+fieldMargins["dep_delay"] = 50;
+fieldMargins["arr_delay"] = 50;
+
+fieldMargins["flight"] = 50;
 
 var isNumeric = null;
 
@@ -19,17 +17,21 @@ var EMPTY_DATUM = "None";
 
 // Number of visualizations
 var visuals = [
-    ['date'],
-    ["latitude", "longitude"],
-    ["description"],
-    ["subtype"],
-    ["city"],
-    ["const_cost"],
-    ["description", "address"]
+    ['dep_delay'],
+    ["origin"],
+    ["destination"],
+    ['arr_delay'],
+    ["distance"],
+    ["origin_state"],
+    ["destination_state"],
+    ["origin", "dep_delay"],
+    ["destination", "arr_delay"],
+
 ];
 
 var rows = 4, cols = 4;
-var layout = [[2, 1], [2, 3], [1, 2], [1, 2], [1, 1], [1, 1], [2, 1]];
+// layout format: [cols, rows]
+var layout = [[2, 1], [1, 2], [1, 2], [2, 1], [2, 1], [1, 1], [1, 1], [2, 1], [2, 1]];
 var numViews = layout.length;
 
 var visualizations = new Array(layout.length);
@@ -43,6 +45,19 @@ var THEME = new APPTHEME();
 var queryManager = new QueryManager({
     visualizations: visualizations
 });
+
+var annotationBinner;
+
+Array.prototype.compare = function(testArr) {
+    if (this.length != testArr.length) return false;
+    for (var i = 0; i < testArr.length; i++) {
+        if (this[i].compare) { //To test values in nested arrays
+            if (!this[i].compare(testArr[i])) return false;
+        }
+        else if (this[i] !== testArr[i]) return false;
+    }
+    return true;
+};
 
 // ----
 // When document is loaded, create the layout and ask for data
@@ -98,7 +113,7 @@ function getDatafromQuery(queryList) {
         success: function (data) {
             handleDatafromQuery(data["content"]);
         },
-        dataType : 'json'
+        dataType: 'json'
     });
 }
 
@@ -139,9 +154,9 @@ function handleDatafromQuery(data) {
 
                 if (value == "" || value == null || value == NaN || value == undefined) {
 
-                    if (value == "" || value == null) {
-                        data[i][key] = EMPTY_DATUM;
-                    }
+                    // if (value == "" || value == null) {
+                    //     data[i][key] = EMPTY_DATUM;
+                    // }
 
                     continue;
 
@@ -162,14 +177,14 @@ function handleDatafromQuery(data) {
 
             if (visualizations[i] == null) {
 
-                if (d[0].toLowerCase().indexOf("date") > -1 || d[0].toLowerCase().indexOf("time") > -1) {
+                if (isNumeric[d[0]]) {
 
                     // using CrossFilter library to create aggregates
                     // TODO: might replace with a database query
                     var aggregates, groupbyDim;
 
                     aggregates = crossfilterData.dimension(function (datum) {
-                        return d3.timeHour.floor(new Date(datum[d[0]]));
+                        return datum[d[0]];
                     });
                     groupbyDim = aggregates.group();
 
@@ -178,11 +193,9 @@ function handleDatafromQuery(data) {
                         .cols([d[0]])
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
-                        .timeScale(d3.timeDay)
-                        .timeFormat(d3.timeFormat("%d/%m"))
-                        .ticks(9)
-                        .label("Permits")
-                        .render();
+                        .ticks(15)
+                        .log(d[0] == "distance" ? false : true)
+                        .label("#Flights");
 
                 } else {
 
@@ -198,12 +211,10 @@ function handleDatafromQuery(data) {
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
                         .marginLeft(fieldMargins[d[0]])
-                        .log(d[0] == "zip"? false: true)
-                        .label("")
-                        .ticks(2)
-                        .render();
+                        .log(false)
+                        .label("#Flights")
+                        .ticks(5);
                 }
-
             } else {
 
                 visualizations[i].render();
@@ -230,9 +241,8 @@ function handleDatafromQuery(data) {
                         .cols([d[0], d[1]])
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
-                        .objectSingular("permit")
-                        .objectPlural("permits")
-                        .render();
+                        .objectSingular("flight")
+                        .objectPlural("flights");
 
                 } else {
 
@@ -242,8 +252,8 @@ function handleDatafromQuery(data) {
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
                         .marginLeft(fieldMargins[d[0]])
-                        .marginTop(fieldMargins[d[1]])
-                        .render();
+                        .marginTop(fieldMargins[d[1]]);
+
                 }
 
             } else {
@@ -253,6 +263,13 @@ function handleDatafromQuery(data) {
             }
 
         }
+    });
+
+    annotationBinner = new AnnotationBinner({});
+    annotationBinner.extract();
+
+    visualizations.forEach(function (v) {
+        v.render();
     });
 
 }

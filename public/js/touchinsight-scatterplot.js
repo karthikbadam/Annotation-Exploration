@@ -26,6 +26,13 @@ function ScatterPlot(options) {
     // When showing numbers, round them to save space -- e.g., 1632 -> 2K
     var formatSuffix = d3.format(".2s");
 
+    function showAnnotation(data) {
+
+        console.log(data);
+
+
+    }
+
     function click(d, i) {
         var filterKey = d["key"];
         var dimensionName = cols[0];
@@ -89,6 +96,9 @@ function ScatterPlot(options) {
 
                 var key = JSON.parse(datum.key);
 
+                key[cols[0]] = "" + key[cols[0]];
+                key[cols[1]] = "" + key[cols[1]]
+
                 if (key[cols[0]] != null && key[cols[1]] != null) {
                     data.push({
                         key: key,
@@ -98,12 +108,24 @@ function ScatterPlot(options) {
 
             });
 
+            data = data.sort(function (a, b) {
+                if (isNumeric[cols[1]]) {
+                    if (parseFloat(b["key"][cols[1]]) <
+                        parseFloat(a["key"][cols[1]])) return 1;
+                    return -1;
+                }
+                if (b["key"][cols[0]] <
+                    a["key"][cols[0]]) return 1;
+                return -1;
+            });
+
             radius = d3.scaleLinear()
-                .domain(d3.extent(data, function (p) {
+                .domain([0, d3.max(data, function (p) {
                     return p["value"];
-                }))
+                })])
                 .range([0.5, pointH / 2]);
 
+            annotationBinner.group_order(showAnnotation, cols);
 
             // Running first time
             // Figuring out the dimension type and labels!
@@ -115,16 +137,30 @@ function ScatterPlot(options) {
                     if (i == 0) {
                         if (isNumeric[d]) {
 
-                            domainY = d3.extent(data, function (p) {
-                                if (isNaN(p["key"][d])) {
-                                    return data[1]["key"][d];
-                                }
-                                return p["key"][d];
-                            });
+                            // domainY = d3.extent(data, function (p) {
+                            //     if (isNaN(p["key"][d])) {
+                            //         return data[1]["key"][d];
+                            //     }
+                            //     return p["key"][d];
+                            // });
+                            //
+                            // y = d3.scaleLinear();
+                            //
+                            // yItems = 0;
+                            //
+                            //  y = d3.scalePoint();
 
-                            y = d3.scaleLinear();
+                            var nest = d3.nest()
+                                .key(function (p) {
+                                    return p["key"][d];
+                                })
+                                .entries(data);
 
-                            yItems = 0;
+                            domainY = nest.map(function (p) {
+                                return p["key"];
+                            }).reverse();
+
+                            yItems = domainY.length > 50 ? 50 : domainY.length;
 
                         } else if (d.toLowerCase().indexOf("date") > 0) {
 
@@ -176,16 +212,31 @@ function ScatterPlot(options) {
                     } else {
 
                         if (isNumeric[d]) {
-                            domainX = d3.extent(data, function (p) {
-                                if (isNaN(p["key"][d])) {
-                                    return data[1]["key"][d];
-                                }
-                                return p["key"][d];
+                            // domainX = d3.extent(data, function (p) {
+                            //     if (isNaN(p["key"][d])) {
+                            //         return data[1]["key"][d];
+                            //     }
+                            //     return p["key"][d];
+                            // });
+                            //
+                            // x = d3.scaleLinear();
+                            //
+                            // xItems = 0;
+
+                            x = d3.scalePoint();
+
+                            var nest = d3.nest()
+                                .key(function (p) {
+                                    return p["key"][d];
+                                })
+                                .entries(data);
+
+                            domainX = nest.map(function (p) {
+                                return p["key"];
                             });
+                            //.sort();
 
-                            x = d3.scaleLinear();
-
-                            xItems = 0;
+                            xItems = domainX.length > 50 ? 50 : domainX.length;
 
 
                         } else if (d.toLowerCase().indexOf("date") > 0) {
@@ -238,7 +289,9 @@ function ScatterPlot(options) {
                     .tickPadding(10)
                     .ticks(6);
 
-                yAxis = d3.axisLeft(y);
+                yAxis = d3.axisLeft(y)
+                    .tickSizeInner(-width)
+                    .tickSizeOuter(0);
 
                 if (x.domain().length > width / FONTWIDTH) {
 
