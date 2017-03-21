@@ -1,3 +1,3 @@
 source activate annotationviz
-python mongo_insert.py
-python app.py
+python mongo_insert_flights.py
+python app_flights.py
