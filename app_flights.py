@@ -33,7 +33,7 @@ collection_db = client.flights.delay
 app = Flask(__name__, static_folder=STATIC_FOLDER, static_path=CUSTOM_STATIC_DIRECTORY)
 
 ## TODO: important columns in the dataset -- provide a new set for each dataset
-COLS = ["arr_delay", "dep_delay", "distance", "origin", "destination"]
+COLS = [ "dep_delay", "origin", "destination", "arr_delay", "distance"]
 meta = {}
 clusters = []
 allData = []
@@ -176,13 +176,17 @@ def extract_feature_vectors(indices, focus = COLS):
 
     documents = []
     newIndices = []
+    print(indices)
+
     for index in indices:
-        if allData[index][annotationCol] != "":
+        if len(allData[index][annotationCol]) > 0:
             documents.append(allData[index])
             newIndices.append(index)
 
     if len(documents) == 0:
-        return []
+        return [], []
+
+    print(documents)
 
     features = []
     for document in documents:
@@ -195,7 +199,7 @@ def extract_feature_vectors(indices, focus = COLS):
                     feature.append(0.)
             elif meta[key]["type"] == "string":
                 for category in meta[key]["values"]:
-                    if key in document:
+                    if key in document.keys():
                         if category == document[key]:
                             feature.append(1./(1.0 * len(meta[key]["values"])))
                         else:
@@ -203,7 +207,7 @@ def extract_feature_vectors(indices, focus = COLS):
                     else:
                         feature.append(0.)
             elif meta[key]["type"] == "date":
-                if key in document:
+                if key in document.keys():
                     feature.append(
                         (document[key] - meta[key]["min"]).total_seconds()* 1.0 / (meta[key]["max"] - meta[key]["min"]).total_seconds()* 1.0)
                 else:
@@ -211,8 +215,61 @@ def extract_feature_vectors(indices, focus = COLS):
 
         features.append(feature)
 
+    print(features)
+
     return newIndices, features
 
+
+def extract_variation(indices, focus = COLS):
+    global allData
+    minmax = {}
+    for key in focus:
+        for index in indices:
+            document = allData[index]
+            if meta[key]["type"] == "number":
+                if key in document.keys():
+                    if key not in minmax.keys():
+                        minmax[key] = [document[key], document[key]]
+                    if minmax[key][0] > document[key]:
+                        minmax[key][0] = document[key]
+                    if minmax[key][1] < document[key]:
+                        minmax[key][1] = document[key]
+
+            elif meta[key]["type"] == "string":
+                if key in document.keys():
+                    if key not in minmax.keys():
+                        minmax[key] = set()
+                    minmax[key].add(document[key])
+            elif meta[key]["type"] == "date":
+                if key in document.keys():
+                    if key not in minmax.keys():
+                        minmax[key] = [document[key], document[key]]
+                    if minmax[key][0] > document[key]:
+                        minmax[key][0] = document[key]
+                    if minmax[key][1] < document[key]:
+                        minmax[key][1] = document[key]
+
+    variance = {}
+    for key in focus:
+        v = {}
+        if meta[key]["type"] == "number":
+            v["key"] = key
+            v["variance"] = (minmax[key][1] - minmax[key][0]) * 1.0/(meta[key]["max"] - meta[key]["min"]) * 1.0
+            v["range"] = minmax[key]
+
+        elif meta[key]["type"] == "string":
+            v["key"] = key
+            v["variance"] = (len(minmax[key]) - 1) * 1.0/len(meta[key]["values"])
+            v["range"] = len(minmax[key])
+
+        elif meta[key]["type"] == "date":
+            v["key"] = key
+            v["variance"] = (minmax[key][1] - minmax[key][0]).total_seconds() * 1.0 / (meta[key]["max"] - meta[key]["min"]).total_seconds()* 1.0
+            v["range"] = [minmax[key][0].strftime("%c"), minmax[key][1].strftime("%c")]
+
+        variance[key] = v
+
+    return variance
 
 def extract_unique(indices, filters):
     global allData, allFeatures, distanceMatrix
@@ -374,26 +431,34 @@ def group_order():
         annotation_group = {}
         for index in data_group["indices"]:
             datum = allData[index]
-            annotation = datum[annotationCol]
-            if annotation in annotation_group.keys():
-                annotation_group[annotation]["scores"].append(datum["score"])
-                if datum["score"] < annotation_group[annotation]["range"][0]:
-                    annotation_group[annotation]["range"][0] = datum["score"]
+            #annotation = datum[annotationCol]
+            for annotation in datum[annotationCol]:
+                if annotation in annotation_group.keys():
+                    annotation_group[annotation]["scores"].append(datum["score"])
+                    annotation_group[annotation]["indices"].append(index)
+                    if datum["score"] < annotation_group[annotation]["range"][0]:
+                        annotation_group[annotation]["range"][0] = datum["score"]
 
-                if datum["score"] > annotation_group[annotation]["range"][1]:
-                    annotation_group[annotation]["range"][1] = datum["score"]
-            else:
-                annotation_group[annotation] = {}
-                annotation_group[annotation]["annotation"] = annotation
-                annotation_group[annotation]["scores"] = []
-                annotation_group[annotation]["range"] = [10000000, -10000000]
+                    if datum["score"] > annotation_group[annotation]["range"][1]:
+                        annotation_group[annotation]["range"][1] = datum["score"]
+                else:
+                    annotation_group[annotation] = {}
+                    annotation_group[annotation]["annotation"] = annotation
+                    annotation_group[annotation]["scores"] = []
+                    annotation_group[annotation]["indices"] = []
+                    annotation_group[annotation]["range"] = [10000000, -10000000]
 
-                annotation_group[annotation]["scores"].append(datum["score"])
-                if datum["score"] < annotation_group[annotation]["range"][0]:
-                    annotation_group[annotation]["range"][0] = datum["score"]
+                    annotation_group[annotation]["scores"].append(datum["score"])
+                    if datum["score"] < annotation_group[annotation]["range"][0]:
+                        annotation_group[annotation]["range"][0] = datum["score"]
 
-                if datum["score"] > annotation_group[annotation]["range"][1]:
-                    annotation_group[annotation]["range"][1] = datum["score"]
+                    if datum["score"] > annotation_group[annotation]["range"][1]:
+                        annotation_group[annotation]["range"][1] = datum["score"]
+
+                    annotation_group[annotation]["indices"].append(index)
+
+        for annotation in annotation_group.keys():
+            annotation_group[annotation]["variance"] = extract_variation(annotation_group[annotation]["indices"], focus=focus)
 
         data_group["annotations"] = [v for v in annotation_group.values()]
 

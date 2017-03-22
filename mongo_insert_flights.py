@@ -63,21 +63,32 @@ for data in data_json:
 
     wData["reason"] = ""
 
+    reasons = []
     if data["AIR_SYSTEM_DELAY"] is not None and int(data["AIR_SYSTEM_DELAY"]) != 0:
-        wData["reason"] = "Delay caused by system"
+        reasons.append("system")
 
     if data["SECURITY_DELAY"] is not None and int(data["SECURITY_DELAY"]) != 0:
-        wData["reason"] = "Delay caused by security" if wData["reason"] == "" else wData["reason"] + ". Delay also caused by security"
+        reasons.append("security")
 
     if data["AIRLINE_DELAY"] is not None and int(data["AIRLINE_DELAY"]) != 0:
-        wData["reason"] = "Delay caused by airline" if wData["reason"] == "" else wData["reason"] + ". Delay also caused by airline"
+        reasons.append("airline")
 
     if data["LATE_AIRCRAFT_DELAY"] is not None and int(data["LATE_AIRCRAFT_DELAY"]) != 0:
-        wData["reason"] = "Delay caused by late aircraft" if wData["reason"] == "" else wData["reason"] + ". Delay also caused by aircraft"
+        reasons.append("late aircraft")
 
     if data["WEATHER_DELAY"] is not None and int(data["WEATHER_DELAY"]) != 0:
-        wData["reason"] = "Delay caused by weather" if wData["reason"] == "" else wData["reason"] + ". Delay also caused by weather"
+        reasons.append("weather")
 
+    final_reason = ""
+    for i, r in enumerate(reasons):
+        if i == 0:
+            final_reason += "Delay caused by " + r
+        elif i == len(reasons) - 1:
+            final_reason += ", and " + r
+        else:
+            final_reason += ", " + r
+
+    wData["reason"] = [final_reason] if final_reason != "" else []
     wData["index"] = index
     print(wData)
 

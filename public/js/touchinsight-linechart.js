@@ -4,7 +4,7 @@
 
 function LineChart(options) {
 
-    var type = "linechart";
+    var type = this.type = "linechart";
 
     var margin = {
         top: 10,
@@ -88,9 +88,10 @@ function LineChart(options) {
             })
             .style("fill", THEME.selection)
             .style("fill-opacity", 0.7)
-            .style("stroke", THEME.fillColor)
+            .style("stroke", "white")
             .style("stroke-width", "1px")
-            .on("click", showAnnotation);
+            .on("click", showAnnotation)
+            .style("display", document.getElementById('show-annotations-switch').checked? "block": "none");
 
         annElements
             .attr("cx", function (d) {
@@ -109,6 +110,7 @@ function LineChart(options) {
         if (!d3.event.sourceEvent) return; // Only transition after input.
         if (!d3.event.selection) {
             //delete filters and then return
+            if (filters.length == 0) return;
             aggregates.filterAll();
             filters = [];
             queryManager.setGlobalQuery({}, true);
@@ -224,61 +226,68 @@ function LineChart(options) {
         inputWrapper.append("legend")
             .html("Annotations");
 
-        var header = annotationBinner.buildHeader(inputWrapper, widget_width - 30, 20,
+         var ann_width = widget_width - 30;
+
+        var header = annotationBinner.buildHeader(inputWrapper, ann_width, 20,
             focus,
             measure,
             redrawAnnotations);
 
         annotations.forEach(function (a) {
             var aWrapper = inputWrapper.append("div")
-                .style("width", widget_width - 30)
+                .style("width", ann_width)
                 .style("height", widget_height / 4)
                 .style("margin-bottom", "5px")
                 .style("border", "1px solid black")
                 .style("display", "block");
 
+            // // code for showing bar variance
             var aWrapperLeft = aWrapper.append("div")
-                .style("width", (widget_width - 30) * 0.10 - 10)
+                .style("width", 0.3 * ann_width)
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
-            aWrapperLeft.append("div")
-                .style("width", (widget_width - 30) * 0.10 - 10)
-                .style("height", widget_height / 4 * (a["range"][1] - a["range"][0]) + 1)
-                .style("top", widget_height / 4 * (1 - a["range"][1]))
-                .style("background-color", "rgba(0, 0, 0, 0.3)")
-                .style("position", "relative")
+            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
 
-            aWrapperLeft.append("div")
-                .style("width", (widget_width - 30) * 0.10 - 10)
-                .style("height", 12)
-                .style("text-align", "right")
-                .style("top", widget_height / 4 * (1 - a["range"][1]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
-                .style("font-size", "10px")
-                .style("color", "#222")
-                .style("position", "relative")
-                .html(function () {
-                    return a["range"][1].toFixed(2);
-                });
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
 
-            if (a["range"][1] != a["range"][0]) {
-                aWrapperLeft.append("div")
-                    .style("width", (widget_width - 30) * 0.10 - 10)
-                    .style("height", 12)
-                    .style("top", widget_height / 4 * (1 - a["range"][0]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
-                    .style("text-align", "right")
-                    .style("font-size", "10px")
-                    .style("color", "#222")
-                    .style("position", "relative")
-                    .style("display", "inline-block")
-                    .html(function () {
-                        return a["range"][0].toFixed(2);
-                    });
 
-            }
+            // aWrapperLeft.append("div")
+            //     .style("width", ann_width * 0.10 - 10)
+            //     .style("height", widget_height / 4 * (a["range"][1] - a["range"][0]) + 1)
+            //     .style("top", widget_height / 4 * (1 - a["range"][1]))
+            //     .style("background-color", "rgba(0, 0, 0, 0.3)")
+            //     .style("position", "relative");
+            //
+            // aWrapperLeft.append("div")
+            //     .style("width", ann_width * 0.10 - 10)
+            //     .style("height", 12)
+            //     .style("text-align", "right")
+            //     .style("top", widget_height / 4 * (1 - a["range"][1]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+            //     .style("font-size", "10px")
+            //     .style("color", "#222")
+            //     .style("position", "relative")
+            //     .html(function () {
+            //         return a["range"][1].toFixed(2);
+            //     });
+            //
+            // if (a["range"][1] != a["range"][0]) {
+            //     aWrapperLeft.append("div")
+            //         .style("width", ann_width * 0.10 - 10)
+            //         .style("height", 12)
+            //         .style("top", widget_height / 4 * (1 - a["range"][0]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
+            //         .style("text-align", "right")
+            //         .style("font-size", "10px")
+            //         .style("color", "#222")
+            //         .style("position", "relative")
+            //         .style("display", "inline-block")
+            //         .html(function () {
+            //             return a["range"][0].toFixed(2);
+            //         });
+            // }
 
             aWrapper.append("div")
-                .style("width", (widget_width - 30) * 0.90)
+                .style("width", 0.6 * widget_width)
                 .style("height", 20)
                 .style("text-align", "right")
                 .style("float", "right")
@@ -289,7 +298,7 @@ function LineChart(options) {
                 });
 
             aWrapper.append("div")
-                .style("width", (widget_width - 30) * 0.90)
+                .style("width", 0.6 * widget_width)
                 .style("height", widget_height / 4 - 20)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")
@@ -508,7 +517,7 @@ function LineChart(options) {
 
                 // Update the y-axis.
                 g.select(".y.baxis")
-                    .attr("transform", "translate(" + x.range()[1] + "0)")
+                    .attr("transform", "translate(" + x.range()[1] + ",0)")
                     .call(byAxis);
 
             }

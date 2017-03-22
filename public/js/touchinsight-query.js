@@ -208,7 +208,7 @@ QueryManager.prototype.setGlobalQuery = function (query, propagate) {
     annotationBinner.extract();
     if (propagate) {
         // call render on all visualizations
-        for (i in _self.visualizations) {
+        for (var i = 0; i < _self.visualizations.length; i++) {
             _self.visualizations[i].render();
         }
     }

@@ -48,7 +48,7 @@ var queryManager = new QueryManager({
 
 var annotationBinner;
 
-Array.prototype.compare = function(testArr) {
+Array.prototype.compare = function (testArr) {
     if (this.length != testArr.length) return false;
     for (var i = 0; i < testArr.length; i++) {
         if (this[i].compare) { //To test values in nested arrays
@@ -65,8 +65,8 @@ Array.prototype.compare = function(testArr) {
 $(document).ready(function () {
 
     //creating the layout
-    width = $("body").width();
-    height = $("body").height();
+    width = $("#content").width();
+    height = $("#content").height();
 
     visuals.forEach(function (d, i) {
         visualizations[i] = null;
@@ -88,8 +88,11 @@ $(document).ready(function () {
             'class="panel"></div>', layout[i][0], layout[i][1]);
     }
 
+    // header
+    createHeader();
+
     //asking for data
-    getDatafromQuery("empty");
+    getDatafromQuery();
 
     // TODO: FIREBASE connection to create cross-device synchronization
     var options = {};
@@ -101,9 +104,62 @@ $(document).ready(function () {
 
 // ---
 // Getting data
+// ---
+function createHeader() {
+
+    // button for clear all interactions
+    d3.select("#header").append("div").style("display", "inline-block").style("margin-right", "10px")
+        .append("button")
+        .attr("id", "clear-all")
+        .attr("class", "mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect")
+        .html("Clear Interactions")
+        .on("click", function () {
+
+            visualizations.forEach(function (v) {
+                v.aggregates().filterAll();
+                v.filters([]);
+                v.filters2D([]);
+            });
+            queryManager.setGlobalQuery({}, true);
+        });
+
+    componentHandler.upgradeElement(document.getElementById("clear-all"));
+
+    // button for show/hiding annotations
+    var label = d3.select("#header").append("div").style("display", "inline-block")
+        .style("margin-right", "10px")
+        .append("label")
+        .attr("id", "show-annotations-toggle")
+        .attr("class", "mdl-switch mdl-js-switch mdl-js-ripple-effect")
+        .attr("for", "show-annotations-switch")
+        .style("display", "inline-block");
+
+    label.append("span")
+        .attr("class", "mdl-switch__label")
+        .html("Show Annotations");
+
+    label.append("input")
+        .attr("type", "checkbox")
+        .attr("id", "show-annotations-switch")
+        .attr("class", "mdl-switch__input")
+        .property("checked", false)
+        .on("change", function () {
+            if (document.getElementById('show-annotations-switch').checked) {
+                d3.selectAll(".annotation-dot").style("display", "block");
+            } else {
+                d3.selectAll(".annotation-dot").style("display", "none");
+            }
+        });
+
+    componentHandler.upgradeElement(document.getElementById("show-annotations-toggle"));
+
+}
+
+// ---
+// Getting data
 // TODO: connect to a database
 // ---
-function getDatafromQuery(queryList) {
+function getDatafromQuery() {
 
     $.ajax({
         type: "POST",
@@ -142,7 +198,7 @@ function handleDatafromQuery(data) {
 
         isNumeric = {};
 
-        for (var i = 0; i < data.length; i++) {
+        for (var i = 0; i < 30; i++) {
 
             var d = data[i];
 

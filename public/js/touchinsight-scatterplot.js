@@ -19,19 +19,181 @@ function ScatterPlot(options) {
 
     var parseTime = d3.timeParse("%H:%M:%S");
 
-    var pointH = 20;
+    var pointH = 25;
 
     var FONTWIDTH = 10;
 
     // When showing numbers, round them to save space -- e.g., 1632 -> 2K
     var formatSuffix = d3.format(".2s");
 
-    function showAnnotation(data) {
+    var measure = null;
 
+    var focus = null;
+
+    function addAnnotationIcons(data) {
+
+        $(".labelObject").remove();
+
+        // {key, value, array[{index, score}], annotations[{annotation, [min, max score], pointsIndices};
         console.log(data);
 
+        // Foreground view showing the current data
+        var annElements = d3.select("#" + parentId).select("#container").selectAll(".annotation-dot")
+            .data(data, function (d) {
+                return d["key"];
+            });
 
+        annElements.enter().append("circle")
+            .attr("class", "annotation-dot")
+            .attr("r", function (d) {
+                return radius(d["indices"].length);
+            })
+            .attr("cx", function (d) {
+                if (isNumeric[cols[1]] && d["key"][cols[1]] == EMPTY_DATUM)
+                    return 0;
+
+                return x(d["key"][cols[1]]);
+            })
+            .attr("cy", function (d) {
+                if (isNumeric[cols[0]] && d["key"][cols[0]] == EMPTY_DATUM)
+                    return 0;
+
+                return y(d["key"][cols[0]]);
+                //return y(d["indices"].length);
+            })
+            .style("fill", THEME.selection)
+            .style("fill-opacity", 0.7)
+            .style("stroke", "white")
+            .style("stroke-width", "1px")
+            .on("click", showAnnotation)
+            .style("display", document.getElementById('show-annotations-switch').checked ? "block" : "none");
+
+        annElements
+            .attr("r", function (d) {
+                return radius(d["indices"].length);
+            })
+            .attr("cx", function (d) {
+                if (isNumeric[cols[1]] && d["key"][cols[1]] == EMPTY_DATUM)
+                    return 0;
+
+                return x(d["key"][cols[1]]);
+            })
+            .attr("cy", function (d) {
+                if (isNumeric[cols[0]] && d["key"][cols[0]] == EMPTY_DATUM)
+                    return 0;
+
+                return y(d["key"][cols[0]]);
+                //return y(d["indices"].length);
+            })
+            .on("click", showAnnotation);
+
+        annElements.exit().remove();
     }
+
+    function redrawAnnotations(newFocus, newMeasure) {
+
+        // change metrics
+        focus = newFocus ? newFocus : focus;
+        measure = newMeasure ? newMeasure : measure;
+
+        // query server
+        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+    }
+
+    function showAnnotation(d, i) {
+
+        // Based on traditional binning algorithms
+        $(".labelObject").remove();
+        d3.event.stopPropagation();
+
+        var annotations = d["annotations"];
+
+        annotations = annotations.sort(function (a, b) {
+            var metric1 = a["range"][1] - a["range"][0];
+            var metric2 = b["range"][1] - b["range"][0];
+
+            return a["scores"].length < b["scores"].length;
+
+            if (metric1 < metric2) {
+                return 1;
+            } else if (metric1 == metric2) {
+                return a["range"][1] < b["range"][1];
+            } else {
+                return -1;
+            }
+        });
+
+        var widget_width = 400;
+        var widget_height = 400;
+        var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
+        var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "labelObject")
+            .style("left", (left - 20) + "px")
+            .style("top", (top - 40) + "px")
+            .style("width", widget_width)
+            .style("height", widget_height)
+            .style("position", "absolute")
+            .style("z-index", 100)
+            .style("overflow", "scroll");
+
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotations");
+
+        var ann_width = widget_width - 30;
+
+        var header = annotationBinner.buildHeader(inputWrapper, ann_width, 20,
+            focus,
+            measure,
+            redrawAnnotations);
+
+        annotations.forEach(function (a) {
+            var aWrapper = inputWrapper.append("div")
+                .style("width", ann_width)
+                .style("height", widget_height / 4)
+                .style("margin-bottom", "5px")
+                .style("border", "1px solid black")
+                .style("display", "block");
+
+            // // code for showing bar variance
+            var aWrapperLeft = aWrapper.append("div")
+                .style("width", 0.3 * ann_width)
+                .style("height", widget_height / 4)
+                .style("float", "left");
+
+            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
+
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
+
+            aWrapper.append("div")
+                .style("width", 0.6 * widget_width)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return a["scores"].length + " points";
+                });
+
+            aWrapper.append("div")
+                .style("width", 0.6 * widget_width)
+                .style("height", widget_height / 4 - 20)
+                .style("display", "inline-block")
+                .style("padding-left", "3px")
+                .style("float", "right")
+                .style("font-size", "14px")
+                .html(function () {
+                    return a["annotation"];
+                });
+        })
+    }
+
 
     function click(d, i) {
         var filterKey = d["key"];
@@ -123,7 +285,7 @@ function ScatterPlot(options) {
                 .domain([0, d3.max(data, function (p) {
                     return p["value"];
                 })])
-                .range([0.5, pointH / 2]);
+                .range([2, pointH / 2]);
 
             annotationBinner.group_order(showAnnotation, cols);
 
@@ -605,7 +767,9 @@ function ScatterPlot(options) {
                 .style("pointer-events", "none")
                 .text(cols[1]);
 
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
+
     }
 
     chart.render = function () {

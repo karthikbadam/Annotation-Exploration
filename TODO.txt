@@ -1,0 +1,12 @@
+[ ] Add new annotations
+[X] Sort: number of points primary and distance secondary
+[X] Add a "clear all" button
+[X] Annotation hide checkbox
+[ ] Hover gives exact annotation count
+[X] White circle outline
+[X] Drop shadow for scroll
+[X] Increase default point size
+[X] Star plot instead of range plot -- for each annotation
+[ ] Add effect size for each annotation - X points of all points attached with this annotation
+[X] ScatterPlot annotation : circle becomes pi or border or center
+[ ] Erasing annotations frequently

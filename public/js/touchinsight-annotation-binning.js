@@ -7,7 +7,7 @@ function AnnotationBinner(options) {
     var _self = this;
     _self.visualizations = visualizations;
     _self.visuals = visuals;
-    _self.COLS = ["arr_delay", "dep_delay", "distance", "origin", "destination"];
+    _self.COLS = [ "dep_delay", "origin", "destination", "arr_delay", "distance"];
     _self.measures = ["cosine", "euclidean", "correlation", "chebyshev", "canberra"]
 }
 
@@ -138,7 +138,6 @@ AnnotationBinner.prototype.buildHeader = function (element, width, height, focus
         .on('click', function () {
             cols_dialog.showModal();
         });
-
 
 
     // Change distance settings
