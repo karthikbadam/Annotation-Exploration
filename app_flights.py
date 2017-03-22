@@ -41,6 +41,7 @@ allFeatures = []
 clusterTree = []
 distanceMatrix = None
 cacheDistances = None
+annotationDistributions = {}
 
 annotationCol = "reason"
 
@@ -48,6 +49,10 @@ annotationCol = "reason"
 def index():
     return app.send_static_file('flights.html')
 
+
+@app.route("/baseline")
+def index_baseline():
+    return app.send_static_file('flights_baseline.html')
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -171,9 +176,35 @@ def create_feature_vectors(query):
 
     return documents, features
 
+def find_annotation_distributions(query):
+    global annotationDistributions
+
+    annotationDistributions = {}
+
+    query = fix(query)
+
+    group = {}
+
+    group["_id"] = "$" + annotationCol
+    #group["_id"][annotationCol] = "$" + annotationCol
+
+    group["value"] = {"$sum": 1}
+
+    pipeline = [
+        {"$match": query},
+        {"$unwind": "$" + annotationCol},
+        {"$group": group},
+    ]
+
+    cursor = collection_db.aggregate(pipeline)
+
+    documents = []
+    for document in cursor:
+        annotationDistributions[document["_id"]] = document["value"]
+        documents.append(document)
+
 
 def extract_feature_vectors(indices, focus = COLS):
-
     documents = []
     newIndices = []
     print(indices)
@@ -185,8 +216,6 @@ def extract_feature_vectors(indices, focus = COLS):
 
     if len(documents) == 0:
         return [], []
-
-    print(documents)
 
     features = []
     for document in documents:
@@ -214,8 +243,6 @@ def extract_feature_vectors(indices, focus = COLS):
                     feature.append(0.)
 
         features.append(feature)
-
-    print(features)
 
     return newIndices, features
 
@@ -366,9 +393,11 @@ def calculate_distance():
     return json.dumps(distances)
 
 
+
+
 @app.route("/order", methods=['POST'])
 def group_order():
-    global allData
+    global allData, annotationDistributions
     req = request.get_json()
 
     # input
@@ -383,6 +412,9 @@ def group_order():
     print("Data Collected!" + str(len(features)))
 
     # Find average distance for each from distance matrix
+    if len(features) == 0:
+        return json.dumps([])
+
     distances = distance.squareform(distance.pdist(features, measure))
 
     for i in range(0, len(indices)):
@@ -459,6 +491,8 @@ def group_order():
 
         for annotation in annotation_group.keys():
             annotation_group[annotation]["variance"] = extract_variation(annotation_group[annotation]["indices"], focus=focus)
+            annotation_group[annotation]["current_points"] = len(annotation_group[annotation]["indices"])
+            annotation_group[annotation]["total_points"] = annotationDistributions[annotation]
 
         data_group["annotations"] = [v for v in annotation_group.values()]
 
@@ -490,8 +524,9 @@ if __name__ == "__main__":
     allData = documents
     allFeatures = features
 
+    find_annotation_distributions({})
+
     # # TODO: dump to file and read from it rather than wasting time computing again
-    Y = []
     # # pickle distances into a file
     # if os.path.isfile("input/flights-distance.pkl"):
     #     pkl_file = open("input/flights-distance.pkl", 'rb')
@@ -504,18 +539,18 @@ if __name__ == "__main__":
     #
     # distanceMatrix = distance.squareform(Y)
 
-    if os.path.isfile("input/flights-clusters.pkl"):
-        pkl_file = open("input/flights-clusters.pkl", 'rb')
-        clusters = pickle.load(pkl_file)
-    else:
-        # if file not found
-        clusters = hierarchy.linkage(Y, metric='cosine', method='average')
-        output = open("input/flights-clusters.pkl", 'wb')
-        pickle.dump(clusters, output)
+    # if os.path.isfile("input/flights-clusters.pkl"):
+    #     pkl_file = open("input/flights-clusters.pkl", 'rb')
+    #     clusters = pickle.load(pkl_file)
+    # else:
+    #     # if file not found
+    #     clusters = hierarchy.linkage(Y, metric='cosine', method='average')
+    #     output = open("input/flights-clusters.pkl", 'wb')
+    #     pickle.dump(clusters, output)
 
     #clusters = hierarchy.linkage(Y, metric='cosine', method='average')
-    clustersTree = hierarchy.to_tree(clusters)
-    cut_tree = hierarchy.cut_tree(clusters, n_clusters=[DEFAULT_CLUSTERS])
+    # clustersTree = hierarchy.to_tree(clusters)
+    # cut_tree = hierarchy.cut_tree(clusters, n_clusters=[DEFAULT_CLUSTERS])
 
     # plt.figure(figsize=(25, 10))
     # hierarchy.dendrogram(

@@ -91,7 +91,7 @@ function LineChart(options) {
             .style("stroke", "white")
             .style("stroke-width", "1px")
             .on("click", showAnnotation)
-            .style("display", document.getElementById('show-annotations-switch').checked? "block": "none");
+            .style("display", document.getElementById('show-annotations-switch').checked ? "block" : "none");
 
         annElements
             .attr("cx", function (d) {
@@ -171,14 +171,15 @@ function LineChart(options) {
 
     }
 
-     function redrawAnnotations(newFocus, newMeasure) {
+    function redrawAnnotations(newFocus, newMeasure) {
 
         // change metrics
         focus = newFocus ? newFocus : focus;
         measure = newMeasure ? newMeasure : measure;
 
         // query server
-        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+        if (!DONT_ANNOTATION_GROUPS)
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
     }
 
     function showAnnotation(d, i) {
@@ -226,7 +227,7 @@ function LineChart(options) {
         inputWrapper.append("legend")
             .html("Annotations");
 
-         var ann_width = widget_width - 30;
+        var ann_width = widget_width - 30;
 
         var header = annotationBinner.buildHeader(inputWrapper, ann_width, 20,
             focus,
@@ -247,9 +248,9 @@ function LineChart(options) {
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
-            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
+            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
 
-            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
 
 
             // aWrapperLeft.append("div")
@@ -294,7 +295,7 @@ function LineChart(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["scores"].length + " points";
+                    return a["current_points"] + " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
@@ -545,8 +546,8 @@ function LineChart(options) {
                 .style("pointer-events", "none")
                 .text(cols[0]);
 
-
-            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+            if (!DONT_ANNOTATION_GROUPS)
+                annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
     }
 

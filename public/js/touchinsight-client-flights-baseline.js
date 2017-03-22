@@ -3,6 +3,7 @@ var fieldMargins = {};
 fieldMargins["origin_state"] = 30;
 fieldMargins["origin"] = 100;
 fieldMargins["destination"] = 100;
+fieldMargins["reason"] = 300;
 fieldMargins["destination_state"] = 30;
 
 fieldMargins["distance"] = 50;
@@ -15,14 +16,12 @@ var isNumeric = null;
 
 var EMPTY_DATUM = "None";
 
-
-var DONT_ANNOTATION_GROUPS = false;
-
 // Number of visualizations
 var visuals = [
     ['dep_delay'],
     ["origin"],
     ["destination"],
+    ["reason"],
     ['arr_delay'],
     ["distance"],
     ["origin_state"],
@@ -32,9 +31,11 @@ var visuals = [
 
 ];
 
+var DONT_ANNOTATION_GROUPS = true;
+
 var rows = 4, cols = 4;
 // layout format: [cols, rows]
-var layout = [[2, 1], [1, 2], [1, 2], [2, 1], [2, 1], [1, 1], [1, 1], [2, 1], [2, 1]];
+var layout = [[1, 1], [1, 2], [1, 2], [1, 3], [1, 1], [1, 1], [1, 1], [1, 1], [2, 1], [2, 1]];
 var numViews = layout.length;
 
 var visualizations = new Array(layout.length);
@@ -80,7 +81,7 @@ $(document).ready(function () {
         min_cols: 3,
         autogrow_cols: true,
         resize: {
-            enabled: true
+            enabled: false
         },
         widget_base_dimensions: [width / rows - 7, height / cols - 5],
         autogenerate_stylesheet: true
@@ -127,35 +128,6 @@ function createHeader() {
         });
 
     componentHandler.upgradeElement(document.getElementById("clear-all"));
-
-    // button for show/hiding annotations
-    var label = d3.select("#header").append("div").style("display", "inline-block")
-        .style("margin-right", "10px")
-        .append("label")
-        .attr("id", "show-annotations-toggle")
-        .attr("class", "mdl-switch mdl-js-switch mdl-js-ripple-effect")
-        .attr("for", "show-annotations-switch")
-        .style("display", "inline-block");
-
-    label.append("span")
-        .attr("class", "mdl-switch__label")
-        .html("Show Annotations");
-
-    label.append("input")
-        .attr("type", "checkbox")
-        .attr("id", "show-annotations-switch")
-        .attr("class", "mdl-switch__input")
-        .property("checked", false)
-        .on("change", function () {
-            if (document.getElementById('show-annotations-switch').checked) {
-                d3.selectAll(".annotation-dot").style("display", "block");
-            } else {
-                d3.selectAll(".annotation-dot").style("display", "none");
-            }
-        });
-
-    componentHandler.upgradeElement(document.getElementById("show-annotations-toggle"));
-
 }
 
 // ---

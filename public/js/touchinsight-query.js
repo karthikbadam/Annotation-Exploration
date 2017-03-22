@@ -205,7 +205,9 @@ QueryManager.prototype.setGlobalQuery = function (query, propagate) {
     // _self.historyQueryStack.push(query);
 
     // update all other visualizations
-    annotationBinner.extract();
+    if (!DONT_ANNOTATION_GROUPS)
+        annotationBinner.extract();
+
     if (propagate) {
         // call render on all visualizations
         for (var i = 0; i < _self.visualizations.length; i++) {

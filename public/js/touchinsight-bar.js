@@ -192,7 +192,8 @@ function BarChart(options) {
         measure = newMeasure ? newMeasure : measure;
 
         // query server
-        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+        if (!DONT_ANNOTATION_GROUPS)
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
     }
 
     function showAnnotation(d, i) {
@@ -315,7 +316,7 @@ function BarChart(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["scores"].length + " points";
+                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
@@ -639,7 +640,9 @@ function BarChart(options) {
                 .attr("font-size", "14px")
                 .text(cols[0]);
 
-            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+
+            if (!DONT_ANNOTATION_GROUPS)
+                annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
     }
 

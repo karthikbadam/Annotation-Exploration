@@ -178,7 +178,7 @@ function ScatterPlot(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["scores"].length + " points";
+                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
@@ -243,8 +243,8 @@ function ScatterPlot(options) {
                 return false;
             });
         }
-
-        queryManager.setGlobalQuery(query, true);
+        if (!DONT_ANNOTATION_GROUPS)
+            queryManager.setGlobalQuery(query, true);
     }
 
 
@@ -287,7 +287,6 @@ function ScatterPlot(options) {
                 })])
                 .range([2, pointH / 2]);
 
-            annotationBinner.group_order(showAnnotation, cols);
 
             // Running first time
             // Figuring out the dimension type and labels!
@@ -767,7 +766,8 @@ function ScatterPlot(options) {
                 .style("pointer-events", "none")
                 .text(cols[1]);
 
-            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+            if (!DONT_ANNOTATION_GROUPS)
+                annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
         });
 
     }
