@@ -97,7 +97,8 @@ function ScatterPlot(options) {
         measure = newMeasure ? newMeasure : measure;
 
         // query server
-        annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
+        if (!DONT_ANNOTATION_GROUPS)
+            annotationBinner.group_order(addAnnotationIcons, cols, focus, measure);
     }
 
     function showAnnotation(d, i) {
@@ -243,8 +244,7 @@ function ScatterPlot(options) {
                 return false;
             });
         }
-        if (!DONT_ANNOTATION_GROUPS)
-            queryManager.setGlobalQuery(query, true);
+        queryManager.setGlobalQuery(query, true);
     }
 
 

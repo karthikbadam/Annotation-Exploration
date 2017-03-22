@@ -48,6 +48,7 @@ var crossfilterData = null;
 var THEME = new APPTHEME();
 var queryManager = new QueryManager({
     visualizations: visualizations
+
 });
 
 var annotationBinner;
