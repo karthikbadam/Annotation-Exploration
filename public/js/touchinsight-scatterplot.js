@@ -301,7 +301,6 @@ function ScatterPlot(options) {
                 })])
                 .range([1, pointH / 2]);
 
-
             // Running first time
             // Figuring out the dimension type and labels!
             if (d3.select("#" + parentId + "scatter").empty()) {

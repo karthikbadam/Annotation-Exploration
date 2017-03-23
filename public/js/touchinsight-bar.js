@@ -384,8 +384,8 @@ function BarChart(options) {
         if (filters.length == 0) {
             aggregates.filterAll();
         } else {
-            var filterDim = aggregates.filter(function (d) {
-                return filters.indexOf(d) >= 0;
+            var filterDim = aggregates.filter(function (e) {
+                return filters.indexOf(e) >= 0;
             });
         }
 
@@ -489,7 +489,7 @@ function BarChart(options) {
 
             // Background view showing the current data
             var backgroundBarElements = d3.select(this).select("#container").selectAll(".background")
-                .data(backgroundData, function name(d) {
+                .data(backgroundData, function (d) {
                     return d["key"];
                 });
 
@@ -602,7 +602,9 @@ function BarChart(options) {
             foregroundBarElements.exit().remove();
 
             d3.select(this).selectAll("svg").selectAll("text.name")
-                .data(data)
+                .data(data, function name(d) {
+                    return d["key"];
+                })
                 .enter().append("text")
                 .style("width", margin.left)
                 .attr("x", margin.left - 5)
