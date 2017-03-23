@@ -299,7 +299,7 @@ function ScatterPlot(options) {
                 .domain([0, d3.max(data, function (p) {
                     return p["value"];
                 })])
-                .range([2, pointH / 2]);
+                .range([1, pointH / 2]);
 
 
             // Running first time
