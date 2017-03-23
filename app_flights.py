@@ -207,8 +207,7 @@ def find_annotation_distributions(query):
 def extract_feature_vectors(indices, focus = COLS):
     documents = []
     newIndices = []
-    print(indices)
-
+    
     for index in indices:
         if len(allData[index][annotationCol]) > 0:
             documents.append(allData[index])
@@ -391,8 +390,6 @@ def calculate_distance():
     cacheDistances = distances
 
     return json.dumps(distances)
-
-
 
 
 @app.route("/order", methods=['POST'])
