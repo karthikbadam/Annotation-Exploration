@@ -252,7 +252,7 @@ function handleDatafromQuery(data) {
                         .cols([d[0]])
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
-                        .ticks(15)
+                        .ticks(12)
                         .log(d[0] == "distance" ? false : true)
                         .label("#Flights");
 

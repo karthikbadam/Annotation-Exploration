@@ -225,9 +225,23 @@ function handleDatafromQuery(data) {
                         .cols([d[0]])
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
-                        .ticks(15)
+                        .ticks(12)
                         .log(d[0] == "distance" ? false : true)
                         .label("#Flights");
+
+                } else if (d[0] == "reason") {
+
+                    // TODO: might replace with a database query
+                    var aggregates = crossfilterData.dimension(function (datum) {
+                        return datum[d[0]];
+                    });
+                    var groupbyDim = aggregates.group();
+
+                    visualizations[i] = new BarAnnotation()
+                        .parent("viz" + i)
+                        .cols([d[0]])
+                        .aggregates(aggregates)
+                        .groupbyDim(groupbyDim);
 
                 } else {
 

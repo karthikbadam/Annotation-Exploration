@@ -70,7 +70,9 @@ body {
     text-transform: capitalize;
 }
 
+
 ::-webkit-scrollbar {
+
     display: none;
 }
 
