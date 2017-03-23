@@ -205,8 +205,8 @@ function LineChart(options) {
             }
         });
 
-        var widget_width = 400;
-        var widget_height = 400;
+        var widget_width = 600;
+        var widget_height = 500;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
@@ -219,7 +219,6 @@ function LineChart(options) {
             .style("position", "absolute")
             .style("z-index", 100)
             .style("overflow", "scroll");
-
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
@@ -242,64 +241,31 @@ function LineChart(options) {
                 .style("border", "1px solid black")
                 .style("display", "block");
 
-            // // code for showing bar variance
+
+            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
+
+             // // code for showing bar variance
             var aWrapperLeft = aWrapper.append("div")
-                .style("width", 0.3 * ann_width)
+                .style("width", starWidth)
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
-            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
 
-            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
-
-
-            // aWrapperLeft.append("div")
-            //     .style("width", ann_width * 0.10 - 10)
-            //     .style("height", widget_height / 4 * (a["range"][1] - a["range"][0]) + 1)
-            //     .style("top", widget_height / 4 * (1 - a["range"][1]))
-            //     .style("background-color", "rgba(0, 0, 0, 0.3)")
-            //     .style("position", "relative");
-            //
-            // aWrapperLeft.append("div")
-            //     .style("width", ann_width * 0.10 - 10)
-            //     .style("height", 12)
-            //     .style("text-align", "right")
-            //     .style("top", widget_height / 4 * (1 - a["range"][1]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
-            //     .style("font-size", "10px")
-            //     .style("color", "#222")
-            //     .style("position", "relative")
-            //     .html(function () {
-            //         return a["range"][1].toFixed(2);
-            //     });
-            //
-            // if (a["range"][1] != a["range"][0]) {
-            //     aWrapperLeft.append("div")
-            //         .style("width", ann_width * 0.10 - 10)
-            //         .style("height", 12)
-            //         .style("top", widget_height / 4 * (1 - a["range"][0]) - (widget_height / 4 * (a["range"][1] - a["range"][0]) + 1) - 15)
-            //         .style("text-align", "right")
-            //         .style("font-size", "10px")
-            //         .style("color", "#222")
-            //         .style("position", "relative")
-            //         .style("display", "inline-block")
-            //         .html(function () {
-            //             return a["range"][0].toFixed(2);
-            //         });
-            // }
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
 
             aWrapper.append("div")
-                .style("width", 0.6 * widget_width)
+                .style("width", widget_width - starWidth - 50)
                 .style("height", 20)
                 .style("text-align", "right")
                 .style("float", "right")
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["current_points"] + " of " + a["total_points"] + " points associated to: ";
+                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
-                .style("width", 0.6 * widget_width)
+                .style("width", widget_width - starWidth - 50)
                 .style("height", widget_height / 4 - 20)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")

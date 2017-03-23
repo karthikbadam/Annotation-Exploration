@@ -227,7 +227,7 @@ function BarChart(options) {
         });
 
         var widget_width = 600;
-        var widget_height = 400;
+        var widget_height = 500;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 

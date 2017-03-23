@@ -124,8 +124,8 @@ function ScatterPlot(options) {
             }
         });
 
-        var widget_width = 400;
-        var widget_height = 400;
+        var widget_width = 600;
+        var widget_height = 500;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
@@ -138,7 +138,6 @@ function ScatterPlot(options) {
             .style("position", "absolute")
             .style("z-index", 100)
             .style("overflow", "scroll");
-
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
@@ -161,18 +160,20 @@ function ScatterPlot(options) {
                 .style("border", "1px solid black")
                 .style("display", "block");
 
-            // // code for showing bar variance
+
+            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
+
+             // // code for showing bar variance
             var aWrapperLeft = aWrapper.append("div")
-                .style("width", 0.3 * ann_width)
+                .style("width", starWidth)
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
-            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
 
-            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
 
             aWrapper.append("div")
-                .style("width", 0.6 * widget_width)
+                .style("width", widget_width - starWidth - 50)
                 .style("height", 20)
                 .style("text-align", "right")
                 .style("float", "right")
@@ -183,7 +184,7 @@ function ScatterPlot(options) {
                 });
 
             aWrapper.append("div")
-                .style("width", 0.6 * widget_width)
+                .style("width", widget_width - starWidth - 50)
                 .style("height", widget_height / 4 - 20)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")
