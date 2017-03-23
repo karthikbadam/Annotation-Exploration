@@ -95,6 +95,8 @@ function BarAnnotation(options) {
             var container = d3.select("#" + parentId)
                 .style("overflow", "scroll");
 
+            container.selectAll(".explicit-annotation").remove();
+
             var g = container.selectAll(".explicit-annotation")
                 .data(annotations, function (d) {
                     return d["key"];

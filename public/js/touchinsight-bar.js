@@ -65,7 +65,7 @@ function BarChart(options) {
             .style("stroke", "white")
             .style("stroke-width", "1px")
             .on("click", showAnnotation)
-            .style("display", document.getElementById('show-annotations-switch').checked? "block": "none");
+            .style("display", document.getElementById('show-annotations-switch').checked ? "block" : "none");
 
         annElements
             .attr("cx", function (d) {
@@ -263,16 +263,16 @@ function BarChart(options) {
                 .style("display", "block");
 
 
-            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
+            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
 
-             // // code for showing bar variance
+            // // code for showing bar variance
             var aWrapperLeft = aWrapper.append("div")
                 .style("width", starWidth)
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
 
-            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
 
 
             // aWrapperLeft.append("div")
@@ -317,18 +317,31 @@ function BarChart(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
+                    return "Of total delays, <b>" + a["total_points"] + "</b> flights have the reason:"
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
                 .style("width", widget_width - starWidth - 50)
-                .style("height", widget_height / 4 - 20)
+                .style("height", widget_height / 4 - 40)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")
                 .style("float", "right")
                 .style("font-size", "14px")
                 .html(function () {
                     return a["annotation"];
+                });
+
+            aWrapper.append("div")
+                .style("width", widget_width - starWidth - 50)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return "<b>" + a["current_points"] + "</b> flights from selection are associated with this reason";
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
         })
     }
@@ -431,7 +444,7 @@ function BarChart(options) {
 
             // Update the x-scale.
             // Note: the domain for x is based on the current data
-            x.domain(d3.extent(data, function (d) {
+            x.domain(d3.extent(backgroundData, function (d) {
                 return xValue(d);
             }));
 

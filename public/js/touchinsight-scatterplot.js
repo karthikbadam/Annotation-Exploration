@@ -180,18 +180,31 @@ function ScatterPlot(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
+                    return "Of total delays, <b>" + a["total_points"] + "</b> flights have the reason:"
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
                 .style("width", widget_width - starWidth - 50)
-                .style("height", widget_height / 4 - 20)
+                .style("height", widget_height / 4 - 40)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")
                 .style("float", "right")
                 .style("font-size", "14px")
                 .html(function () {
                     return a["annotation"];
+                });
+
+            aWrapper.append("div")
+                .style("width", widget_width - starWidth - 50)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return  "<b>" + a["current_points"]+  "</b> flights from selection are associated with this reason";
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
         })
     }

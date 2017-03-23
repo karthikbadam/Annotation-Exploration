@@ -207,7 +207,7 @@ def find_annotation_distributions(query):
 def extract_feature_vectors(indices, focus = COLS):
     documents = []
     newIndices = []
-    
+
     for index in indices:
         if len(allData[index][annotationCol]) > 0:
             documents.append(allData[index])

@@ -21,7 +21,7 @@ function LineChart(options) {
 
     var filters2D = [];
 
-    var roundValue = 10, ticks, log = false;
+    var roundValue = 10, ticksX, ticksY, log = false;
 
     var label, log = false;
 
@@ -242,16 +242,16 @@ function LineChart(options) {
                 .style("display", "block");
 
 
-            var starWidth = 0.3 * ann_width > widget_height / 4? widget_height / 4: 0.3 * ann_width;
+            var starWidth = 0.3 * ann_width > widget_height / 4 ? widget_height / 4 : 0.3 * ann_width;
 
-             // // code for showing bar variance
+            // // code for showing bar variance
             var aWrapperLeft = aWrapper.append("div")
                 .style("width", starWidth)
                 .style("height", widget_height / 4)
                 .style("float", "left");
 
 
-            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus:annotationBinner.COLS);
+            var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
 
             aWrapper.append("div")
                 .style("width", widget_width - starWidth - 50)
@@ -261,18 +261,31 @@ function LineChart(options) {
                 .style("padding-left", "3px")
                 .style("display", "inline-block")
                 .html(function () {
-                    return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
+                    return "Of total delays, <b>" + a["total_points"] + "</b> flights have the reason:"
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
 
             aWrapper.append("div")
                 .style("width", widget_width - starWidth - 50)
-                .style("height", widget_height / 4 - 20)
+                .style("height", widget_height / 4 - 40)
                 .style("display", "inline-block")
                 .style("padding-left", "3px")
                 .style("float", "right")
                 .style("font-size", "14px")
                 .html(function () {
                     return a["annotation"];
+                });
+
+            aWrapper.append("div")
+                .style("width", widget_width - starWidth - 50)
+                .style("height", 20)
+                .style("text-align", "right")
+                .style("float", "right")
+                .style("padding-left", "3px")
+                .style("display", "inline-block")
+                .html(function () {
+                    return  "<b>" + a["current_points"]+  "</b> flights from selection are associated with this reason";
+                    //return a["current_points"]+ " of " + a["total_points"] + " points associated to: ";
                 });
         })
     }
@@ -321,20 +334,20 @@ function LineChart(options) {
                 x.domain(d3.extent(backgroundData, function (d) {
                     return xValue(d);
                 }));
+
+                // Update the y-scale.
+                var domainY = log ? d3.extent(data, function (d) {
+                    return yValue(d);
+                }) : [0, d3.max(data, function (d) {
+                    return yValue(d);
+                })];
+
+                if (log && domainY[0] == 0) {
+                    domainY[0] = 1
+                }
+
+                y.domain(domainY);
             }
-
-            // Update the y-scale.
-            var domainY = log ? d3.extent(data, function (d) {
-                return yValue(d);
-            }) : [0, d3.max(data, function (d) {
-                return yValue(d);
-            })];
-
-            if (log && domainY[0] == 0) {
-                domainY[0] = 1
-            }
-
-            y.domain(domainY);
 
             width = $("#" + parentId).width() - margin.left - margin.right;
             height = $("#" + parentId).height() - margin.top - margin.bottom;
@@ -349,16 +362,38 @@ function LineChart(options) {
                 .tickSizeInner(-height)
                 .tickSizeOuter(0)
                 .tickPadding(10)
-                .ticks(ticks);
+                .tickValues(function () {
+                    var d = x.domain();
+                    var ticks = [];
+                    for (var i = d[0]; i < d[1]; i += 10) {
+                        if (i % ticksX == 0) {
+                            ticks.push(i);
+                        }
+                    }
+                    return ticks;
+                }());
 
             yAxis = d3.axisLeft()
                 .scale(y)
-                .tickFormat(d3.format(".0f"))
                 .tickSizeInner(-width)
                 .tickSizeOuter(0)
-                .tickFormat(d3.format(".1s"))
+                .tickFormat(d3.format(".2s"))
                 .tickPadding(10)
-                .ticks(Math.round(height / 40));
+                .tickValues(function () {
+                    var d = y.domain();
+                    var t = [];
+                    var i = d[0];
+                    while (i < d[1]) {
+                        i = log ? i + 10 * (i / 10) : i + 10;
+                        if (log) {
+                            t.push(i);
+                        }
+                        else if (i % ticksY == 0) {
+                            t.push(i);
+                        }
+                    }
+                    return t;
+                }());
 
             brush.extent([[0, 0], [width, height]]);
 
@@ -562,9 +597,15 @@ function LineChart(options) {
         return chart;
     };
 
-    chart.ticks = function (_) {
+    chart.ticksY = function (_) {
         if (!arguments.length) return ticks;
-        ticks = _;
+        ticksY = _;
+        return chart;
+    };
+
+    chart.ticksX = function (_) {
+        if (!arguments.length) return ticks;
+        ticksX = _;
         return chart;
     };
 

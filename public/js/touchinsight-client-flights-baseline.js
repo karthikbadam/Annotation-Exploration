@@ -225,9 +225,11 @@ function handleDatafromQuery(data) {
                         .cols([d[0]])
                         .aggregates(aggregates)
                         .groupbyDim(groupbyDim)
-                        .ticks(12)
+                        .label("#Flights")
                         .log(d[0] == "distance" ? false : true)
-                        .label("#Flights");
+                        .ticksX(d[0] == "distance" ? 400 : 60)
+                        .ticksY(d[0] == "distance" ? 400 : 50)
+                        .label("#Flights");;
 
                 } else if (d[0] == "reason") {
 
