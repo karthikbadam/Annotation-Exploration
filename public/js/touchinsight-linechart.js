@@ -107,6 +107,7 @@ function LineChart(options) {
 
 
     function brushend() {
+        $(".labelObject").remove();
         if (!d3.event.sourceEvent) return; // Only transition after input.
         if (!d3.event.selection) {
             //delete filters and then return

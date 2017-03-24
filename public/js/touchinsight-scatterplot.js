@@ -211,6 +211,7 @@ function ScatterPlot(options) {
 
 
     function click(d, i) {
+        $(".labelObject").remove();
         var filterKey = d["key"];
         var dimensionName = cols[0];
 
