@@ -51,7 +51,7 @@ function LineChart(options) {
         .x(function (d) {
             return x(xValue(d));
         })
-        .curve(curve ? curve : d3.curveStepAfter)
+        .curve(curve ? curve : d3.curveStep)
         .y1(function (d) {
             // return 0 if date is within a filter
             // Check for switching query on and off
