@@ -21,7 +21,7 @@ function StarAnnotation(element, width, height, data, cols) {
 
     var labels = cols.map(function (c) {
         var splits = c.split("_");
-        var build = splits[0][0] + (splits.length > 1? "_"+splits[1][0]: splits[0][1]);
+        var build = splits[0][0] + (splits.length > 1 ? "_" + splits[1][0] : splits[0][1]);
         return build;
     });
 
@@ -100,6 +100,9 @@ function StarAnnotation(element, width, height, data, cols) {
                 .attr("class", "popup")
                 .style("left", d3.event.pageX)
                 .style("top", d3.event.pageY)
+                .on("click", function () {
+                    d3.select(".popup").remove();
+                })
                 .style("z-index", 100)
                 .style('position', "absolute")
                 .append("span")
@@ -119,7 +122,7 @@ function StarAnnotation(element, width, height, data, cols) {
             interaction
                 .style('display', 'none');
 
-            d3.select(".popup").remove();
+            // d3.select(".popup").remove();
 
             svg.selectAll('.star-label')
                 .style('display', 'block');
