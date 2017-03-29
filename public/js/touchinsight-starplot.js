@@ -76,9 +76,50 @@ function StarAnnotation(element, width, height, data, cols) {
                 .style('left', d.xExtent - (ninteractionLabel.width() / 2))
                 .style('top', d.yExtent - (ninteractionLabel.height() / 2))
         })
+        .on('click', function (d) {
+            svg.selectAll('.star-label')
+                .style('display', 'none');
+
+            interaction
+                .style('display', 'block');
+
+            circle
+                .attr('cx', d.x)
+                .attr('cy', d.y);
+
+            var ninteractionLabel = $(interactionLabel.node());
+            // interactionLabel
+            //     .text(d.datum[d.key].values)
+            //     .style('left', d.xExtent - (ninteractionLabel.width() / 2))
+            //     .style('top', d.yExtent - (ninteractionLabel.height() / 2));
+
+
+            d3.select(".popup").remove();
+
+            var span = d3.select("body").append("div")
+                .attr("class", "popup")
+                .style("left", d3.event.pageX)
+                .style("top", d3.event.pageY)
+                .style("z-index", 100)
+                .style('position', "absolute")
+                .append("span")
+                .attr("id", "myPopup")
+                .attr("class", "popuptext");
+
+            d.datum[d.key].values.forEach(function (el) {
+                span.append("li").html(el);
+            });
+
+            var popup = document.getElementById("myPopup");
+
+            popup.classList.toggle("show");
+
+        })
         .on('mouseout', function (d) {
             interaction
                 .style('display', 'none');
+
+            d3.select(".popup").remove();
 
             svg.selectAll('.star-label')
                 .style('display', 'block');

@@ -40,7 +40,7 @@ function BarChart(options) {
 
     function addAnnotationIcons(data) {
 
-        $(".labelObject").remove();
+        $("#labelObject" + parentId).remove();
 
         // {key, value, array[{index, score}], annotations[{annotation, [min, max score], pointsIndices};
         console.log(data);
@@ -58,7 +58,7 @@ function BarChart(options) {
                 return margin.left + x(d["indices"].length);
             })
             .attr("cy", function (d) {
-                return margin.top + y.range()[0] - (y(yValue(d)) + barH / 2);
+                return margin.top + y.range()[0] - (y(yValue(d)) + barH - (barH - 5) / 2);
             })
             .style("fill", THEME.selection)
             .style("fill-opacity", 0.7)
@@ -72,7 +72,7 @@ function BarChart(options) {
                 return margin.left + x(d["indices"].length);
             })
             .attr("cy", function (d) {
-                return margin.top + y.range()[0] - (y(yValue(d)) + barH / 2);
+                return margin.top + y.range()[0] - (y(yValue(d)) + barH - (barH - 5) / 2);
             })
             .on("click", showAnnotation);
 
@@ -81,7 +81,7 @@ function BarChart(options) {
 
     function addAnnotation(d, i, selection) {
 
-        $(".labelObject").remove();
+        $("#labelObject" + parentId).remove();
 
         if (!d3.event.altKey) {
             return;
@@ -158,7 +158,7 @@ function BarChart(options) {
 
         // Based on hierarchical clustering from the server
 
-        $(".labelObject").remove();
+        $("#labelObject" + parentId).remove();
 
         var inputWrapper = d3.select("body").append("div")
             .attr("class", "labelObject")
@@ -202,7 +202,7 @@ function BarChart(options) {
 
         d3.event.stopPropagation();
 
-        $(".labelObject").remove();
+        $("#labelObject" + parentId).remove();
 
         var annotations = d["annotations"];
 
@@ -222,8 +222,6 @@ function BarChart(options) {
             }
 
             return b["scores"].length - a["scores"].length;
-
-
         });
 
         var widget_width = 600;
@@ -231,7 +229,8 @@ function BarChart(options) {
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
-        var inputWrapper = d3.select("body").append("div")
+        var inputWrapper = d3.select("body")
+            .append("div").attr("id", "labelObject" + parentId)
             .attr("class", "labelObject")
             .style("left", (left - 20) + "px")
             .style("top", (top - 40) + "px")
@@ -240,6 +239,13 @@ function BarChart(options) {
             .style("position", "absolute")
             .style("z-index", 100)
             .style("overflow", "scroll");
+
+        // Bind the functions...
+        document.getElementById("labelObject" + parentId).onmousedown = function () {
+            _drag_init(this);
+            return false;
+        };
+
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
@@ -348,7 +354,7 @@ function BarChart(options) {
 
     function hoverend(d, i) {
 
-        $(".labelObject").remove();
+        $("#labelObject" + parentId).remove();
 
     }
 
@@ -375,7 +381,7 @@ function BarChart(options) {
         if (filters.indexOf(filterKey) >= 0) {
             var index = filters.indexOf(filterKey);
             filters.splice(index, 1);
-            $(".labelObject").remove();
+            $("#labelObject" + parentId).remove();
 
         } else {
             filters.push(filterKey);
@@ -440,7 +446,8 @@ function BarChart(options) {
             width = $("#" + parentId).width() - margin.left - margin.right;
             height = $("#" + parentId).height() - margin.top - margin.bottom;
 
-            var actualheight = ((barH) * data.length < height ? height : (barH) * data.length) + 50 - margin.top - margin.bottom;
+            var actualheight = ((barH) * data.length < height ? height :
+                (barH) * data.length) + 50 - margin.top - margin.bottom;
 
             // Update the x-scale.
             // Note: the domain for x is based on the current data
@@ -455,7 +462,7 @@ function BarChart(options) {
             }));
 
             x.range([0, width]);
-            y.range([actualheight, 0]);
+            y.range([data.length * barH, 0]);
 
             xAxis = d3.axisTop(x)
                 .tickSizeInner(-actualheight)

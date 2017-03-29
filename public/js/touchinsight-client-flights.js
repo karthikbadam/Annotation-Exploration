@@ -156,6 +156,10 @@ function createHeader() {
 
     componentHandler.upgradeElement(document.getElementById("show-annotations-toggle"));
 
+    d3.select("#header").on("click", function () {
+        $(".labelObject").remove();
+    });
+
 }
 
 // ---

@@ -66,7 +66,7 @@ function LineChart(options) {
 
     function addAnnotationIcons(data) {
 
-        $(".labelObject").remove();
+        $("#labelObject"+parentId).remove();
 
         // {key, value, array[{index, score}], annotations[{annotation, [min, max score], pointsIndices};
         console.log(data);
@@ -107,7 +107,7 @@ function LineChart(options) {
 
 
     function brushend() {
-        $(".labelObject").remove();
+        $("#labelObject"+parentId).remove();
         if (!d3.event.sourceEvent) return; // Only transition after input.
         if (!d3.event.selection) {
             //delete filters and then return
@@ -186,7 +186,7 @@ function LineChart(options) {
     function showAnnotation(d, i) {
 
         // Based on traditional binning algorithms
-        $(".labelObject").remove();
+        $("#labelObject"+parentId).remove();
         d3.event.stopPropagation();
 
         var annotations = d["annotations"];
@@ -212,6 +212,7 @@ function LineChart(options) {
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
         var inputWrapper = d3.select("body").append("div")
+            .attr("id", "labelObject"+parentId)
             .attr("class", "labelObject")
             .style("left", (left - 20) + "px")
             .style("top", (top - 40) + "px")
@@ -220,6 +221,12 @@ function LineChart(options) {
             .style("position", "absolute")
             .style("z-index", 100)
             .style("overflow", "scroll");
+
+        // Bind the functions...
+        document.getElementById("labelObject" + parentId).onmousedown = function () {
+            _drag_init(this);
+            return false;
+        };
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("background-color", "rgba(255, 255, 255, 0.7)");

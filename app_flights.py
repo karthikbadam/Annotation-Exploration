@@ -282,16 +282,19 @@ def extract_variation(indices, focus = COLS):
             v["key"] = key
             v["variance"] = (minmax[key][1] - minmax[key][0]) * 1.0/(meta[key]["max"] - meta[key]["min"]) * 1.0
             v["range"] = minmax[key]
+            v["values"] = minmax[key]
 
         elif meta[key]["type"] == "string":
             v["key"] = key
             v["variance"] = (len(minmax[key]) - 1) * 1.0/len(meta[key]["values"])
             v["range"] = len(minmax[key])
+            v["values"] = list(minmax[key])
 
         elif meta[key]["type"] == "date":
             v["key"] = key
             v["variance"] = (minmax[key][1] - minmax[key][0]).total_seconds() * 1.0 / (meta[key]["max"] - meta[key]["min"]).total_seconds()* 1.0
             v["range"] = [minmax[key][0].strftime("%c"), minmax[key][1].strftime("%c")]
+            v["values"] = [minmax[key][0].strftime("%c"), minmax[key][1].strftime("%c")]
 
         variance[key] = v
 
