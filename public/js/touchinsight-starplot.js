@@ -73,7 +73,7 @@ function StarAnnotation(element, width, height, data, cols) {
             var ninteractionLabel = $(interactionLabel.node());
             interactionLabel
                 .text(d.key + ': ' + d.datum[d.key].range)
-                .style('left', d.xExtent - (ninteractionLabel.width() / 2))
+                .style('left', d.xExtent)
                 .style('top', d.yExtent - (ninteractionLabel.height() / 2))
         })
         .on('click', function (d) {
