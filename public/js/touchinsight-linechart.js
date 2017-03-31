@@ -207,12 +207,12 @@ function LineChart(options) {
         });
 
         var widget_width = 600;
-        var widget_height = 500;
+        var widget_height = 600;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
-        var inputWrapper = d3.select("body").append("div")
-            .attr("id", "labelObject"+parentId)
+        var inputWrapper = d3.select("body")
+            .append("div").attr("id", "labelObject" + parentId)
             .attr("class", "labelObject")
             .style("left", (left - 20) + "px")
             .style("top", (top - 40) + "px")
@@ -228,9 +228,13 @@ function LineChart(options) {
             return false;
         };
 
+
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("max-height", widget_height - 100)
+            .style("overflow", "scroll")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
+        
         inputWrapper.append("legend")
             .html("Annotations");
 

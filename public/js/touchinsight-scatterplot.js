@@ -23,12 +23,89 @@ function ScatterPlot(options) {
 
     var FONTWIDTH = 10;
 
+    var minRadius = 1.5;
+
     // When showing numbers, round them to save space -- e.g., 1632 -> 2K
     var formatSuffix = d3.format(".2s");
 
     var measure = null;
 
     var focus = null;
+
+    function addAnnotation(d, i, selection) {
+
+        $("#labelObject" + parentId).remove();
+
+        if (!d3.event.altKey) {
+            return;
+        }
+
+        // add annotation textbox
+        $(".annotationObject").remove();
+
+        var inputWrapper = d3.select("body").append("div")
+            .attr("class", "annotationObject")
+            .style("left", (d3.event.pageX - 20) + "px")
+            .style("top", (d3.event.pageY - 40) + "px")
+            .style("width", 200)
+            .style("height", 200)
+            .style("position", "absolute")
+            .style("z-index", 100);
+
+        inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("background-color", "rgba(255, 255, 255, 0.7)");
+
+        inputWrapper.append("legend")
+            .html("Annotation");
+
+        var inputDiv = inputWrapper.append("div")
+            .attr("class", "mdl-textfield mdl-js-textfield");
+
+        inputDiv.append("textarea")
+            .attr("class", "mdl-textfield__input")
+            .attr("id", parentId + "annotation")
+            .attr("type", "text")
+            .attr("width", 180)
+            .attr("rows", "3")
+            .on("change", function () {
+                //Handle entered data here
+                console.log(this.value);
+                if (this.value && this.value.length > 0) {
+                    d3.select("#" + parentId + "annotation-button").html("Add");
+                } else {
+                    d3.select("#" + parentId + "annotation-button").html("Close");
+                }
+            });
+
+        inputDiv.append("label")
+            .attr("class", "mdl-textfield__label")
+            .attr("for", parentId + "annotation");
+
+        componentHandler.upgradeElement(document.getElementById(parentId + "annotation"));
+
+        inputWrapper.append("button")
+            .attr("id", parentId + "annotation-button")
+            .attr("class", "mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect")
+            .html("Close")
+            .on('click', function () {
+
+                console.log("Final annotation: " + document.getElementById(parentId + "annotation").value);
+
+                if (document.getElementById(parentId + "annotation").value.length > 0) {
+                    //do something
+                }
+
+                $(".annotationObject").remove();
+
+                if (!selection.empty()) {
+                    selection.attr("fill", function () {
+                        return this.tagName.toLowerCase() == "text" ? "#AAA" : THEME.fillColor;
+                    });
+                }
+            });
+
+        componentHandler.upgradeElement(document.getElementById(parentId + "annotation-button"));
+    };
 
     function addAnnotationIcons(data) {
 
@@ -125,12 +202,12 @@ function ScatterPlot(options) {
         });
 
         var widget_width = 600;
-        var widget_height = 500;
+        var widget_height = 600;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
-        var inputWrapper = d3.select("body").append("div")
-            .attr("id", "labelObject"+parentId)
+        var inputWrapper = d3.select("body")
+            .append("div").attr("id", "labelObject" + parentId)
             .attr("class", "labelObject")
             .style("left", (left - 20) + "px")
             .style("top", (top - 40) + "px")
@@ -147,6 +224,8 @@ function ScatterPlot(options) {
         };
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("max-height", widget_height - 100)
+            .style("overflow", "scroll")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
         inputWrapper.append("legend")
@@ -219,6 +298,7 @@ function ScatterPlot(options) {
 
     function click(d, i) {
         $("#labelObject"+parentId).remove();
+
         var filterKey = d["key"];
         var dimensionName = cols[0];
 
@@ -307,7 +387,7 @@ function ScatterPlot(options) {
                 .domain([0, d3.max(data, function (p) {
                     return p["value"];
                 })])
-                .range([1, pointH / 2]);
+                .range([minRadius, pointH / 2]);
 
             // Running first time
             // Figuring out the dimension type and labels!
@@ -503,7 +583,9 @@ function ScatterPlot(options) {
             var svg = d3.select(this).selectAll("svg");
 
             // Otherwise, create the skeletal chart.
-            var gEnter = svg.data([data]).enter().append("svg").attr("id", parentId + "scatter").append("g").attr("id", "container");
+            var gEnter = svg.data([data]).enter().append("svg").attr("id", parentId + "scatter")
+                .on("click", addAnnotation)
+                .append("g").attr("id", "container");
 
             gEnter.append("g").attr("class", "x axis");
             gEnter.append("g").attr("class", "y axis");

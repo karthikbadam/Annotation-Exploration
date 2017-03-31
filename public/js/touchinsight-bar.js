@@ -225,7 +225,7 @@ function BarChart(options) {
         });
 
         var widget_width = 600;
-        var widget_height = 500;
+        var widget_height = 600;
         var left = d3.event.pageX + widget_width > $("body").width() ? $("body").width() - widget_width : d3.event.pageX;
         var top = d3.event.pageY + widget_height > $("body").height() ? $("body").height() - widget_height : d3.event.pageY;
 
@@ -248,6 +248,8 @@ function BarChart(options) {
 
 
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
+            .style("max-height", widget_height - 100)
+            .style("overflow", "scroll")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
         inputWrapper.append("legend")
@@ -279,7 +281,6 @@ function BarChart(options) {
 
 
             var star = new StarAnnotation(aWrapperLeft, starWidth, starWidth, a["variance"], focus ? focus : annotationBinner.COLS);
-
 
             // aWrapperLeft.append("div")
             //     .style("width", ann_width * 0.10 - 10)
