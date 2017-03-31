@@ -72,11 +72,13 @@ text {
     text-transform: capitalize;
 }
 
-/*#annotation-form {*/
+#annotation-form {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     /*-webkit-box-shadow: 4px 2px 8px 8px rgba(156, 156, 156, 1);*/
     /*-moz-box-shadow: 4px 2px 8px 8px rgba(156, 156, 156, 1);*/
     /*box-shadow: 4px 2px 8px 4px rgba(156, 156, 156, 1);*/
-/*}*/
+}
 
 fieldset {
     border: solid 1px #000;
