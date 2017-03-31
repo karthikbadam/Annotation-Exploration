@@ -255,6 +255,11 @@ function BarChart(options) {
         inputWrapper.append("legend")
             .html("Annotations");
 
+        inputWrapper = inputWrapper.append("div")
+            .style("max-height", widget_height - 110)
+            .attr("class", "annotationBox")
+            .style("overflow", "scroll")
+
         var ann_width = widget_width - 30;
 
         var header = annotationBinner.buildHeader(inputWrapper, ann_width, 20,

@@ -228,8 +228,15 @@ function ScatterPlot(options) {
             .style("overflow", "scroll")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
+
         inputWrapper.append("legend")
             .html("Annotations");
+
+        inputWrapper = inputWrapper.append("div")
+            .style("max-height", widget_height - 110)
+            .attr("class", "annotationBox")
+            .style("overflow", "scroll");
+
 
         var ann_width = widget_width - 30;
 
