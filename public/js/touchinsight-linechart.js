@@ -192,18 +192,19 @@ function LineChart(options) {
         var annotations = d["annotations"];
 
         annotations = annotations.sort(function (a, b) {
-            var metric1 = a["range"][1] - a["range"][0];
-            var metric2 = b["range"][1] - b["range"][0];
-
-            return a["scores"].length < b["scores"].length;
-
-            if (metric1 < metric2) {
-                return 1;
-            } else if (metric1 == metric2) {
-                return a["range"][1] < b["range"][1];
-            } else {
-                return -1;
+             if (b["scores"].length == a["scores"].length) {
+                var metric1 = a["range"][1] - a["range"][0];
+                var metric2 = b["range"][1] - b["range"][0];
+                if (metric1 > metric2) {
+                    return 1;
+                } else if (metric1 == metric2) {
+                    return a["range"][1] - b["range"][1];
+                } else {
+                    return -1;
+                }
             }
+
+            return b["scores"].length - a["scores"].length;
         });
 
         var widget_width = 600;

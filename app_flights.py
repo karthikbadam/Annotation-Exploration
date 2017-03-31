@@ -445,6 +445,7 @@ def group_order():
         if stringKey in data_groups.keys():
             data_groups[stringKey]["key"] = keys
             data_groups[stringKey]["indices"].append(index)
+            data_groups[stringKey]["count"] += 1
             # data_groups[stringKey]["scores"].append({"index": index,
             #                                          "score": datum["score"]})
         else:
@@ -452,6 +453,7 @@ def group_order():
             data_groups[stringKey]["indices"] = []
             data_groups[stringKey]["annotations"] = []
             data_groups[stringKey]["key"] = keys
+            data_groups[stringKey]["count"] = 1
             data_groups[stringKey]["indices"].append(index)
             #data_groups[stringKey]["scores"] = []
 
