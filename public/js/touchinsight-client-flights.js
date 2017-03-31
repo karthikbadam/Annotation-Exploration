@@ -160,6 +160,39 @@ function createHeader() {
         $(".labelObject").remove();
     });
 
+
+    // button for show/hiding annotations
+    var label = d3.select("#header").append("div").style("display", "inline-block")
+        .style("margin-right", "10px")
+        .append("label")
+        .attr("id", "show-annotations-toggle")
+        .attr("class", "mdl-switch mdl-js-switch mdl-js-ripple-effect")
+        .attr("for", "show-annotations-switch")
+        .style("display", "inline-block");
+
+    label.append("span")
+        .attr("class", "mdl-switch__label")
+        .html("Add Annotations");
+
+    label.append("input")
+        .attr("type", "checkbox")
+        .attr("id", "show-annotations-switch")
+        .attr("class", "mdl-switch__input")
+        .property("checked", false)
+        .on("change", function () {
+            if (document.getElementById('show-annotations-switch').checked) {
+                d3.selectAll(".annotation-dot").style("display", "block");
+            } else {
+                d3.selectAll(".annotation-dot").style("display", "none");
+            }
+        });
+
+    componentHandler.upgradeElement(document.getElementById("show-annotations-toggle"));
+
+    d3.select("#header").on("click", function () {
+        $(".labelObject").remove();
+    });
+
 }
 
 // ---

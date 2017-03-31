@@ -228,13 +228,12 @@ function LineChart(options) {
             return false;
         };
 
-
         inputWrapper = inputWrapper.append("fieldset").attr("id", "annotation-form")
             .style("max-height", widget_height - 100)
             .style("overflow", "scroll")
             .style("background-color", "rgba(255, 255, 255, 0.7)");
 
-        
+
         inputWrapper.append("legend")
             .html("Annotations");
 
