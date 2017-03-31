@@ -5,6 +5,8 @@ import time
 import traceback
 import json
 from datetime import datetime
+from math import sqrt
+
 import pickle
 
 ## database and server
@@ -44,6 +46,32 @@ cacheDistances = None
 annotationDistributions = {}
 
 annotationCol = "reason"
+
+
+def stat(lst):
+    """Calculate mean and std deviation from the input list."""
+    n = float(len(lst))
+    mean = sum(lst) / n
+    stdev = sqrt((sum(x * x for x in lst) / n) - (mean * mean))
+    return mean, stdev
+
+
+def parse(lst, n):
+    lst.sort(key=lambda x: x["count"], reverse=True)
+    cluster = []
+    for value in lst:
+        if len(cluster) <= 1:    # the first two values are going directly in
+            cluster.append(value["count"])
+            continue
+
+        mean,stdev = stat(cluster)
+        if abs(mean - value["count"]) > n * stdev:    # check the "distance"
+            yield cluster
+            cluster[:] = []    # reset cluster to the empty list
+
+        cluster.append(value["count"])
+    yield cluster           # yield the last cluster
+
 
 @app.route("/")
 def index():
@@ -430,7 +458,10 @@ def group_order():
     print("Distances Found!")
 
     # group
+
     data_groups = {}
+    cluster_groups = []
+
     for i in range(0, len(indices)):
         index = indices[i]
         datum = allData[index]
@@ -456,6 +487,18 @@ def group_order():
             data_groups[stringKey]["count"] = 1
             data_groups[stringKey]["indices"].append(index)
             #data_groups[stringKey]["scores"] = []
+
+
+    # print (data_groups)
+    # for values in data_groups.values():
+    #     cluster_groups.append({
+    #         "key": values["key"],
+    #         "count": values["count"]
+    #     })
+
+
+    for cluster in parse(cluster_groups, int(len(cluster_groups)*1.0/3)):
+        print(cluster)
 
     print("Groups formed!")
 

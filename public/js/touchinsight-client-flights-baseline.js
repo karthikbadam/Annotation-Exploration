@@ -140,7 +140,7 @@ function getDatafromQuery() {
     $.ajax({
         type: "POST",
         contentType: 'application/json',
-        url: "http://localhost:3000/data",
+        url: "/data",
         data: JSON.stringify({}),
         success: function (data) {
             handleDatafromQuery(data["content"]);

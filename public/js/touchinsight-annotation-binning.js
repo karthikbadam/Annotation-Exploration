@@ -36,7 +36,7 @@ AnnotationBinner.prototype.group_order = function (returnFunction, cols, focus, 
     $.ajax({
         type: "POST",
         contentType: 'application/json',
-        url: "http://localhost:3000/order",
+        url: "/order",
         data: JSON.stringify({indices: _self.indices, focus: focus, cols: cols, measure: measure}),
         success: function (data) {
             // data is an array of groups of
