@@ -6,6 +6,7 @@ import traceback
 import json
 from datetime import datetime
 from math import sqrt
+import random
 
 import pickle
 
@@ -58,6 +59,7 @@ def stat(lst):
 
 def parse(lst, n):
     lst.sort(key=lambda x: x["count"], reverse=True)
+    allClusters = []
     cluster = []
     for value in lst:
         if len(cluster) <= 1:    # the first two values are going directly in
@@ -66,11 +68,16 @@ def parse(lst, n):
 
         mean,stdev = stat(cluster)
         if abs(mean - value["count"]) > n * stdev:    # check the "distance"
-            yield cluster
-            cluster[:] = []    # reset cluster to the empty list
+            #yield cluster
+            allClusters.append(cluster[:])
+            cluster = []    # reset cluster to the empty list
 
         cluster.append(value["count"])
-    yield cluster           # yield the last cluster
+
+    #yield cluster # yield the last cluster
+    allClusters.append(cluster[:])
+
+    return allClusters
 
 
 @app.route("/")
@@ -489,18 +496,26 @@ def group_order():
             #data_groups[stringKey]["scores"] = []
 
 
-    # print (data_groups)
-    # for values in data_groups.values():
-    #     cluster_groups.append({
-    #         "key": values["key"],
-    #         "count": values["count"]
-    #     })
+    for values in data_groups.values():
+        cluster_groups.append({
+            "key": values["key"],
+            "count": values["count"]
+        })
 
+    # print(cluster_groups)
+    # for cluster in parse(cluster_groups, 4):
+    #     print(cluster)
+    #
+    # print("Groups formed!")
 
-    for cluster in parse(cluster_groups, int(len(cluster_groups)*1.0/3)):
-        print(cluster)
-
-    print("Groups formed!")
+    ## combine groups
+    data_groups_new = {}
+    aux = list(data_groups.keys())
+    sample = random.sample(aux, 15)
+    for elem in sorted(data_groups.keys()):
+        data_groups_new[elem] = data_groups[elem]
+        
+    data_groups = data_groups_new
 
     # reorder to get annotation data
     for key in data_groups.keys():
